@@ -7,15 +7,22 @@ The key construction is a callable struct compatible with the
 DifferentialEquations.jl calling syntax.
 
 ```julia
-nd = network_dynamics(nodes!, lines!, s_e, t_e)
+nd = network_dynamics(nodes!, lines!, s_e, t_e, dim_n, dim_l; symbols_n=nothing, symbols_l=nothing)
 nd(dx, x, p, t)
 ```
 
-The key functions, or function arrays from which a network dynamics is
-constructed are:
+The first two parameters are the functions, or function arrays from which a network dynamics is
+constructed:
 
 ``$nodes![n](dx, x, [l]_s, [l]_t, p, t)$``
 ``$lines![e](dl, l, x_s, x_t, p, t)$``
+
+The arrays dim_n and dim_l encode the dimensionality of $x$ and $l$ variables.
+The arrays s_e and t_e encode the network structure by giving the source and
+target of each edge.
+
+Optionally we can also specify an array of symbols per edge and node that allow
+convenience access to the different nodal and line dimensions.
 
 Given edges $e$, and nodes $n$, as well as an orientation encoded by
 the source function $s(e)$ and the target function $t(e)$
@@ -44,12 +51,21 @@ lines = (dl, l, x_1, x_2) -> dl .= 1000. * ((x_1 - x_2) - l)
 nodes = (dx_n, x_n, l_s, l_t, p_n, t) -> dx_n .= f(x_n) - (sum(l_s) - sum(l_t))
 ```
 
+The package also supplies a node and a line type that combine the the node
+function, the dimensionality and the symbols, as well as a constructor for the
+network dynamics from these types. Further Constructors are provided for
+LightGraphs:
+
+```julia
+nd=(nodes::Array{ODE_Node}, lines::Array{ODE_Line}, G::AbstractGraph)
+```
+
 ## Static lines
 
 For static line relations we similarly have:
 
 ```julia
-sl_nd = static_lines_network_dynamics(nodes!, lines!, s_e, t_e)
+sl_nd = static_lines_network_dynamics(nodes!, lines!, s_e, t_e, ...)
 sl_nd(dx, x, p, t)
 ```
 
@@ -57,9 +73,7 @@ With the convention for lines given by:
 
 ``$lines![e](l, x_s, x_t, p, t)$``
 
-Given edges $e$, and nodes $n$, as well as an orientation encoded by
-the source function $s(e)$ and the target function $t(e)$
-this implements the system of ODEs:
+and otherwise as above. This implements the system of ODEs:
 
 ``$\frac{dx_n}{dt} = dx_n$``
 
@@ -80,11 +94,17 @@ lines = (l, x_1, x_2) -> l .= x_1 - x_2
 nodes = (dx_n, x_n, l_s, l_t, p_n, t) -> dx_n .= f(x_n) - (sum(l_s) - sum(l_t))
 ```
 
-## Convenience functions for symbolic access to node variables
+The alternative constructor is given by:
+
+```julia
+nd=(nodes::Array{ODE_Node}, lines::Array{Static_Line}, G::AbstractGraph)
+```
 
 ## Network DAEs
 ## Network SDEs
 ## Network DDEs
+
+## Convenience functions for symbolic access to node variables
 
 ## API
 

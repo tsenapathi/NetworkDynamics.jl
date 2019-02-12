@@ -21,7 +21,7 @@ var documenterSearchIndex = {"docs": [
     "page": "NetworkDynamics.jl",
     "title": "Overview",
     "category": "section",
-    "text": "This package implements functions for defining and studying dynamics on networks. The key construction is a callable struct compatible with the DifferentialEquations.jl calling syntax.nd = network_dynamics(nodes!, lines!, s_e, t_e)\nnd(dx, x, p, t)The key functions, or function arrays from which a network dynamics is constructed are:nodesn(dx x l_s l_t p t) linese(dl l x_s x_t p t)Given edges e, and nodes n, as well as an orientation encoded by the source function s(e) and the target function t(e) this implements the system of ODEs:fracdx_ndt = dx_nfracdl_edt = dl_ewith dx and dl calculated byl_s = l_e text if  s(e) = nl_t = l_e text if  t(e) = nnodesn(dx_n x_n l_s l_t p_n t)linese(dl_e l_e x_s(e) x_t(e) p_e t)Something that relaxes to a diffusive network would for example be implemented bylines = (dl, l, x_1, x_2) -> dl .= 1000. * ((x_1 - x_2) - l)\nnodes = (dx_n, x_n, l_s, l_t, p_n, t) -> dx_n .= f(x_n) - (sum(l_s) - sum(l_t))"
+    "text": "This package implements functions for defining and studying dynamics on networks. The key construction is a callable struct compatible with the DifferentialEquations.jl calling syntax.nd = network_dynamics(nodes!, lines!, s_e, t_e, dim_n, dim_l; symbols_n=nothing, symbols_l=nothing)\nnd(dx, x, p, t)The first two parameters are the functions, or function arrays from which a network dynamics is constructed:nodesn(dx x l_s l_t p t) linese(dl l x_s x_t p t)The arrays dimn and diml encode the dimensionality of x and l variables. The arrays se and te encode the network structure by giving the source and target of each edge.Optionally we can also specify an array of symbols per edge and node that allow convenience access to the different nodal and line dimensions.Given edges e, and nodes n, as well as an orientation encoded by the source function s(e) and the target function t(e) this implements the system of ODEs:fracdx_ndt = dx_nfracdl_edt = dl_ewith dx and dl calculated byl_s = l_e text if  s(e) = nl_t = l_e text if  t(e) = nnodesn(dx_n x_n l_s l_t p_n t)linese(dl_e l_e x_s(e) x_t(e) p_e t)Something that relaxes to a diffusive network would for example be implemented bylines = (dl, l, x_1, x_2) -> dl .= 1000. * ((x_1 - x_2) - l)\nnodes = (dx_n, x_n, l_s, l_t, p_n, t) -> dx_n .= f(x_n) - (sum(l_s) - sum(l_t))The package also supplies a node and a line type that combine the the node function, the dimensionality and the symbols, as well as a constructor for the network dynamics from these types. Further Constructors are provided for LightGraphs:nd=(nodes::Array{ODE_Node}, lines::Array{ODE_Line}, G::AbstractGraph)"
 },
 
 {
@@ -29,15 +29,7 @@ var documenterSearchIndex = {"docs": [
     "page": "NetworkDynamics.jl",
     "title": "Static lines",
     "category": "section",
-    "text": "For static line relations we similarly have:sl_nd = static_lines_network_dynamics(nodes!, lines!, s_e, t_e)\nsl_nd(dx, x, p, t)With the convention for lines given by:linese(l x_s x_t p t)Given edges e, and nodes n, as well as an orientation encoded by the source function s(e) and the target function t(e) this implements the system of ODEs:fracdx_ndt = dx_nwith dx calculated bylinese(l_e x_s(e) x_t(e) p_e t)l_s = l_e text if  s(e) = nl_t = l_e text if  t(e) = nnodesn(dx_n x_n l_s l_t p_n t)A diffusive network would be implemented bylines = (l, x_1, x_2) -> l .= x_1 - x_2\nnodes = (dx_n, x_n, l_s, l_t, p_n, t) -> dx_n .= f(x_n) - (sum(l_s) - sum(l_t))"
-},
-
-{
-    "location": "#Convenience-functions-for-symbolic-access-to-node-variables-1",
-    "page": "NetworkDynamics.jl",
-    "title": "Convenience functions for symbolic access to node variables",
-    "category": "section",
-    "text": ""
+    "text": "For static line relations we similarly have:sl_nd = static_lines_network_dynamics(nodes!, lines!, s_e, t_e, ...)\nsl_nd(dx, x, p, t)With the convention for lines given by:linese(l x_s x_t p t)and otherwise as above. This implements the system of ODEs:fracdx_ndt = dx_nwith dx calculated bylinese(l_e x_s(e) x_t(e) p_e t)l_s = l_e text if  s(e) = nl_t = l_e text if  t(e) = nnodesn(dx_n x_n l_s l_t p_n t)A diffusive network would be implemented bylines = (l, x_1, x_2) -> l .= x_1 - x_2\nnodes = (dx_n, x_n, l_s, l_t, p_n, t) -> dx_n .= f(x_n) - (sum(l_s) - sum(l_t))The alternative constructor is given by:nd=(nodes::Array{ODE_Node}, lines::Array{Static_Line}, G::AbstractGraph)"
 },
 
 {
@@ -65,6 +57,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Convenience-functions-for-symbolic-access-to-node-variables-1",
+    "page": "NetworkDynamics.jl",
+    "title": "Convenience functions for symbolic access to node variables",
+    "category": "section",
+    "text": ""
+},
+
+{
     "location": "#NetworkDynamics.diffusive_network_dynamics",
     "page": "NetworkDynamics.jl",
     "title": "NetworkDynamics.diffusive_network_dynamics",
@@ -81,7 +81,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#NetworkDynamics.diffusive_network_dynamics-Tuple{LightGraphs.AbstractGraph,Any}",
+    "location": "#NetworkDynamics.diffusive_network_dynamics-Tuple{AbstractGraph,Any}",
     "page": "NetworkDynamics.jl",
     "title": "NetworkDynamics.diffusive_network_dynamics",
     "category": "method",
@@ -93,7 +93,7 @@ var documenterSearchIndex = {"docs": [
     "page": "NetworkDynamics.jl",
     "title": "NetworkDynamics.network_dynamics",
     "category": "type",
-    "text": "The three key functions are:\n\nnodes: nodes(dx x l p t)\n\naggregate: agg(l_sl_t)\n\nlines: lines(dl l x_s x_t p t)\n\nGiven edges e, ans nodes n, as well as an orientation encoded by the source function s(e) and the target function t(e) this implements the system of ODEs:\n\nfracdx_ndt = dx_n\n\nfracdl_edt = dl_e\n\nwith dx and dl calculated by\n\nl_s = l_e text if  s(e) = n\n\nl_t = l_e text if  t(e) = n\n\nl_n = aggn(l_s l_t)\n\nnodesn(dx_n x_n l_n p_n t)\n\nlinese(dl_e l_e x_s(e) x_t(e) p_e t)\n\nSomething that relaxes to a diffusive network would for example be implemented by\n\nlines = (dl, l, x_1, x_2) -> dl .= 1000. * ((x_1 - x_2) - l)\nagg = (list_1, list_2) -> sum(list_1) - sum(list_2)\n\n\n\n\n\n"
+    "text": "The key functions or function arrays are:\n\nnodes: nodes(dx x l_sl_t p t)\n\nlines: lines(dl l x_s x_t p t)\n\nGiven edges e, ans nodes n, as well as an orientation encoded by the source function s(e) and the target function t(e) this implements the system of ODEs:\n\nfracdx_ndt = dx_n\n\nfracdl_edt = dl_e\n\nwith dx and dl calculated by\n\nl_s = l_e text if  s(e) = n\n\nl_t = l_e text if  t(e) = n\n\nnodesn(dx_n x_n l_s l_t p_n t)\n\nlinese(dl_e l_e x_s(e) x_t(e) p_e t)\n\nAlternative design:\n\nSomething that relaxes to a diffusive network would for example be implemented by\n\nlines = (dl, l, x_1, x_2) -> dl .= 1000. * ((x_1 - x_2) - l)\nagg = (list_1, list_2) -> sum(list_1) - sum(list_2)\n\n\n\n\n\n"
 },
 
 {
@@ -105,7 +105,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#NetworkDynamics.network_dynamics_on_lines-Tuple{LightGraphs.AbstractGraph,Any}",
+    "location": "#NetworkDynamics.network_dynamics_on_lines-Tuple{AbstractGraph,Any}",
     "page": "NetworkDynamics.jl",
     "title": "NetworkDynamics.network_dynamics_on_lines",
     "category": "method",
