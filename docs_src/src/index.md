@@ -57,7 +57,7 @@ network dynamics from these types. Further Constructors are provided for
 LightGraphs:
 
 ```julia
-nd=(nodes::Array{ODE_Node}, lines::Array{ODE_Line}, G::AbstractGraph)
+nd=network_dynamics(nodes::Array{ODE_Node}, lines::Array{ODE_Line}, G::AbstractGraph)
 ```
 
 ## Static lines
@@ -97,10 +97,23 @@ nodes = (dx_n, x_n, l_s, l_t, p_n, t) -> dx_n .= f(x_n) - (sum(l_s) - sum(l_t))
 The alternative constructor is given by:
 
 ```julia
-nd=(nodes::Array{ODE_Node}, lines::Array{Static_Line}, G::AbstractGraph)
+sl_nd=static_lines_network_dynamics(nodes::Array{ODE_Node}, lines::Array{Static_Line}, G::AbstractGraph)
 ```
 
 ## Network DAEs
+
+Design question: Don't do implicit DAEs, support mass matrices everywhere by
+default. This adds two more (optional) arrays of vectors to the signature of
+the constructor and the ODE_Node and the Static_Line types.
+
+The advantage is that we can then deal with only three types of dynamics, ODE,
+SDE and DDE. Leaning towards yes on this. The important special case of all ODE
+can then be done via a performance optimization.
+
+This would suggest splitting this into three sub packages, ODE, SDE and DDE.
+Each sub package should define its own XDE_Node and XDE_line as well as
+promotion rules from other XDE_Node and XDE_line types.
+
 ## Network SDEs
 ## Network DDEs
 
