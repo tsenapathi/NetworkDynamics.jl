@@ -14,3 +14,5 @@ makedocs(
 #=deploydocs(
     repo = "<repository url>"
 )=#
+
+cp("docs_src/build", "docs", force=true)
