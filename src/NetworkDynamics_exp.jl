@@ -14,17 +14,16 @@ function diffusion_edge!(e, v_s, v_d, p, t)
 end
 
 function diffusion_vertex!(dv, v, e_ss, e_ds, p, t)
-    source_flow = 0.
-    if length(e_ss) > 0
-        source_flow = sum(sum.(e_ss))
+    dv .= 0
+
+    for e_s in e_ss
+        dv .-= e_s
     end
 
-    dest_flow = 0.
-    if length(e_ds) > 0
-        dest_flow = sum(sum.(e_ds))
+    for e_d in e_ds
+        dv .+= e_d
     end
 
-    dv .= .- source_flow .+ dest_flow
     nothing
 end
 
@@ -67,6 +66,7 @@ dim_e is an array of the number of variables per edge
 function multi_static(vertices!, edges!, s_e, d_e, dim_v, dim_e)
     num_v = length(dim_v)
     num_e = length(dim_e)
+
     e_int = zeros(sum(dim_e))
 
     # x has length sum(dim_v)
@@ -92,7 +92,7 @@ function multi_static(vertices!, edges!, s_e, d_e, dim_v, dim_e)
     e_d = [[view(e_int, e_idx[i_e]) for i_e in 1:num_e if i_v == d_e[i_e]] for i_v in 1:num_v]
 
     s_idx = [v_idx[s_e[i_e]] for i_e in 1:num_e]
-    d_idx = [v_idx[s_e[i_e]] for i_e in 1:num_e]
+    d_idx = [v_idx[d_e[i_e]] for i_e in 1:num_e]
 
 
     multi_static(
