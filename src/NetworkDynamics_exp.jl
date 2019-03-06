@@ -2,9 +2,16 @@ module NetworkDynamics_exp
 
 using Parameters
 using LightGraphs
-using LinearAlgebra
 
-export edge!
+# Some ideas:
+# A homogeneous networks type where nodes and vertices are always the same
+# function and only the parameters can vary.
+#
+# Maybe the index construction aspects have some generality and it makes sense
+# to extract them into separate functions.
+#
+# Can we do a change graph function that recalculates everything internal as
+# long as the number of vertices hasn't changed?
 
 # Vertex, Edge, Source, Destination
 
@@ -14,6 +21,8 @@ function diffusion_edge!(e, v_s, v_d, p, t)
 end
 
 function diffusion_vertex!(dv, v, e_ss, e_ds, p, t)
+    # Note that e_ss and e_ds might be empty, the code needs to be able to deal
+    # with this situation.
     dv .= 0
 
     for e_s in e_ss

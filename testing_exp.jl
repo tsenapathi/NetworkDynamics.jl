@@ -1,4 +1,11 @@
-using LightGraphs
+begin
+    using LightGraphs
+    using LinearAlgebra
+    using DifferentialEquations
+    using Plots
+end
+
+include("src/NetworkDynamics_exp.jl")
 
 function test_diffusive()
     G =barabasi_albert(30, 4)
@@ -32,13 +39,6 @@ function test_diffusive()
 end
 
 begin
-    include("src/NetworkDynamics_exp.jl")
-
-    using LightGraphs
-    using LinearAlgebra
-    using DifferentialEquations
-    using Plots
-
     G =barabasi_albert(30, 4)
 
     edges! = [NetworkDynamics_exp.diffusion_edge! for e in edges(G)]
@@ -49,9 +49,23 @@ begin
 
     rhs = NetworkDynamics_exp.multi_static(vertices!, edges!, G, dim_v, dim_e)
 
-    prob = ODEProblem(rhs,rand(sum(dim_v)),(0.,5.))
+    ic = rand(sum(dim_v))
+
+    prob = ODEProblem(rhs,ic,(0.,50.))
 end
 
 sol = solve(prob)
+
+begin
+    x_f = sol[:, end]
+    x_f1 = sum(ic[1:2:end])/30
+    x_f2 = sum(ic[2:2:end])/30
+
+    @assert isapprox(sum(ic[1:2:end]), sum(x_f[1:2:end]))
+    @assert isapprox(sum(ic[2:2:end]), sum(x_f[2:2:end]))
+
+    @assert isapprox(x_f1, x_f[1])
+    @assert isapprox(x_f2, x_f[2])
+end
 
 plot(sol,legend=false)
