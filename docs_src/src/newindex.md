@@ -7,67 +7,75 @@ The key construction is a callable struct compatible with the
 DifferentialEquations.jl calling syntax.
 
 ```julia
-nd = network_dynamics(nodes!, lines!, g)
+nd = network_dynamics(vertices!, edges!, g)
 nd(dx, x, p, t)
 ```
 
 The first two parameters are the functions, or function arrays from which a network dynamics is
-built. The last parameter is a graph encoding the network, constructed with
+built. The last parameter g is a graph encoding the network constructed with
 the LightGraphs.jl package.
 Note that the type network_dynamics is only a placeholder for the dynamics types we will now specify.
 
-##Static lines
+## Static lines
 
 A dynamical network with static lines (static meaning that the current on an edge depends solely on the
-values on the nodes it connects) is created via the struct static_line_network_dynamics:
+values on the nodes it connects) is created via the scalar_static_lines function:
 
 ```julia
-slnd = static_line_network_dynamics(nodes!, lines!, g)
+ssl = scalar_static_lines(vertices!, edges!, g)
 ```
-The functions nodes! and lines! are of the form:
+The functions vertices! and edges! are of the form:
 
 ```julia
-nodes![n](dx[n],x[n],l_s[n],l_t[n],p,t)
-lines![e](l[e],x_s,x_t,p,t)  
+vertices![n](dv[n],v[n],e_s[n],e_t[n],p,t)
+edges![m](e[m],v_s,v_t,p,t)  
 ```
 
 Specifically, the given variables are:
 
 ```julia
-l_s[n] = [l[e] if s[e] == n for e in 1:length(lines!)]
-l_t[n] = [l[e] if t[e] == n for e in 1:length(lines!)]
-x_s=x[s[e]]
-x_t=x[t[e]]
+e_s[n] = [e[m] if s[m] == n for m in 1:length(lines!)]
+e_t[n] = [e[m] if t[m] == n for m in 1:length(lines!)]
+v_s= v[s[m]]
+v_t= v[t[m]]
 ```
 The vectors s and t contain the information about the source and target of each
-edge, i.e. s[1] == 2 -> The source of edge 1 is node 2. The vectors l_s[n] and l_t[n] are
-basically containing the in- and outgoing currents of node n in the form of an array. Thus,
-when describing the dynamics of the node variables, we will need to sum over these.
+edge, i.e. s[1] == 2 -> The source of edge 1 is vertex 2. The function creates
+these vectors from the given graph, they can be accessed via the calling syntax
+ssl.s_e or ssl.t_e.
+The vectors e_s[n] and e_t[n] are containing the in- and outgoing edge values (or currents)
+of vertex n in the form of an array. Thus, one would classically sum over these in vertices!,
+but one is not restricted on doing this.
 
-For example, a system of equations describing a diffusive network would be:
+For example, a system of equations describing a simple diffusive network would be:
 
 ```julia
 using LightGraphs
 g= barabasi_albert(10,5)
-nodes! = [(dx,x,l_s,l_t,p,t) -> dx .= sum(l_s) - sum(l_t) for n in nodes(g)]
-lines! = [(l,x_s,x_t,p,t) -> l .= x_s - x_t for e in edges(g)]
+vertices! = [(dv,v,l_s,l_t,p,t) -> dv .= sum(e_s) .- sum(e_t) for vertex in vertices(g)]
+edges! = [(e,v_s,v_t,p,t) -> e .= v_s .- v_t for edge in edges(g)]
 ```
 
 Here, the diffusiveness lies within the lines! function. It states that there is only
 a current between two nodes if these nodes have a non-equal value. This current then ultimatively
 leads to an equilibrium in which the value on any connected node is equal.
 
-Note that one needs to put a dot before the equal signs. This is due to the use of views
-in the internals of the static_line_network_dynamics function.
+Note that one should (for performance reasons) and actually needs to put a dot before the mathematical operators.
+This is due to the use of views in the internals of the scalar_static_lines function.
 
-We finally want to solve the defined diffusive system. This we do by using the magnificient
-package DifferentialEquations.jl. We also need to specify a set of initial values x0 as well as a time
-interval for which we are solving the problem:
+We finally want to solve the defined diffusive system. This we do by using the well-known
+package DifferentialEquations.jl (see [here](http://docs.juliadiffeq.org/latest/)). We also need to specify a set of initial values x0 as well as a time
+interval t for which we are solving the problem:
 
 ```julia
 using DifferentialEquations
+using Plots
 x0 = rand(10)
-slnd = static_line_network_dynamics(nodes!,lines!,g)
-slnd_prob = ODEProblem(slnd,x0,(0.,2.))
-sol = solve(slnd_prob)
+t = (0.,2.)
+ssl = static_line_network_dynamics(vertices!,edges!,g)
+ssl_prob = ODEProblem(ssl,x0,t)
+sol = solve(ssl_prob)
+plot(sol, legend = false)
 ```
+
+![](sslfig.pdf)

@@ -131,8 +131,8 @@ function (d::multi_dyn)(dx, x, p, t)
     @views begin
 
     for i in 1:d.num_e
-        # d.l_e[i] = d.l_e_int[l_idx[i]] as view
-        d.edges![i](d.e_int[d.e_idx[i]], x[d.s_idx[i]], x[d.d_idx[i]], p, t)
+        d.e_int[d.e_idx[i]] .= x[d.e_x_idx[i]]
+        d.edges![i](dx[d.e_x_idx[i]],d.e_int[d.e_idx[i]], x[d.s_idx[i]], x[d.d_idx[i]], p, t)
     end
     for i in 1:d.num_v
         d.vertices![i](dx[d.v_idx[i]], x[d.v_idx[i]], d.e_s[i], d.e_d[i], p, t)
@@ -169,7 +169,7 @@ function multi_dyn(vertices!, edges!, s_e, d_e, dim_v, dim_e)
         counter += dim_e[i]
     end
 
-    e_x_idx = [e_idx[i] .+= sum(dim_v) for i in 1:num_e]
+    e_x_idx = [e_idx[i] .+ sum(dim_v) for i in 1:num_e]
     # For every vertex, and for every edge, if the source of the edge is that vertex, take the view on the variables of that edge.
     # Thus e_s[i] is an array of views onto the variables of the edges for which i is the source.
     e_s = [[view(e_int, e_idx[i_e]) for i_e in 1:num_e if i_v == s_e[i_e]] for i_v in 1:num_v]
@@ -178,7 +178,6 @@ function multi_dyn(vertices!, edges!, s_e, d_e, dim_v, dim_e)
     s_idx = [v_idx[s_e[i_e]] for i_e in 1:num_e]
     d_idx = [v_idx[d_e[i_e]] for i_e in 1:num_e]
 
-
     multi_dyn(
     edges!,
     vertices!,
@@ -186,7 +185,7 @@ function multi_dyn(vertices!, edges!, s_e, d_e, dim_v, dim_e)
     num_e, # Number of edges
     e_int, # Variables living on edges
     e_idx, # Array of Array of indices of variables in e_int belonging to edges
-    e_x_idx,
+    e_x_idx, #Array of Array of indices of variables in x belonging to edges
     s_idx, # Array of Array of indices of variables in x belonging to source vertex of edge
     d_idx, # Array of Array of indices of variables in x belonging to destination vertex of edge
     v_idx, # Array of Array of indices of variables in x belonging to vertex
@@ -202,10 +201,11 @@ end
 
 g= barabasi_albert(10,4)
 edges! = [diffusion_edge! for e in edges(g)]
+dedges! = [(dl,l,x_s,x_t,p,t) -> dl .= 1000. .* (x_s .- x_t .- l) for e in edges(g)]
 vertices! = [diffusion_vertex! for v in vertices(g)]
-x0 = rand(10)
-dim_v = ones(Int32,10)
-dim_e = ones(Int32,24)
+x0 = rand(68)
+dim_v = ones(Int32,10)*2
+dim_e = ones(Int32,24)*2
 
 a=multi_static(vertices!,edges!,g,dim_v,dim_e)
 
@@ -213,17 +213,8 @@ aprob = ODEProblem(a,x0,(0.,2.))
 sol = solve(aprob)
 plot(sol, legend = false)
 
-b = multi_dyn(vertices!,edges!,g,dim_v,dim_e)
+b = multi_dyn(vertices!,dedges!,g,dim_v,dim_e)
 
-bprob = ODEProblem(b,x0,(0.,2.))
+bprob = ODEProblem(b,x0,(0.,20.))
 sol2 = solve(bprob)
-plot(sol2, legend = false)
-
-e_idx = [zeros(Int32, dim) for dim in dim_e]
-counter = 1
-e_idx = [zeros(Int32, dim) for dim in dim_e]
-for i in 1:a.num_e
-    e_idx[i] .= collect(counter:counter + dim_e[i] - 1)
-    counter += dim_e[i]
-end
-[e_idx[i] .+= sum(dim_v) for i in 1:a.num_e]
+plot(sol2, legend = false, vars=1:20)
