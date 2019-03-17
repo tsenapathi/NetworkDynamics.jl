@@ -18,12 +18,16 @@ Note that the type network_dynamics is only a placeholder for the dynamics types
 
 ## Static lines
 
+#### Scalar variables
+
+We will first look into the case where there is only a scalar variable on each vertex.
 A dynamical network with static lines (static meaning that the current on an edge depends solely on the
 values on the nodes it connects) is created via the scalar_static_lines function:
 
 ```julia
 ssl = scalar_static_lines(vertices!, edges!, g)
 ```
+
 The functions vertices! and edges! are of the form:
 
 ```julia
@@ -72,10 +76,166 @@ using DifferentialEquations
 using Plots
 x0 = rand(10)
 t = (0.,2.)
-ssl = static_line_network_dynamics(vertices!,edges!,g)
+ssl = scalar_static_lines(vertices!,edges!,g)
 ssl_prob = ODEProblem(ssl,x0,t)
 sol = solve(ssl_prob)
 plot(sol, legend = false)
 ```
 
 ![](sslfig.pdf)
+
+As one would expect in a diffusive network, the values on the vertices converge.
+
+
+#### Vector variables
+
+In most cases, one is interested in problems with multiple variables on the vertices,
+one can deal with these problems by using the, compared to the previous more general,
+static_lines function:
+
+```julia
+sl = static_lines(vertices!, edges!, g, dim_v, dim_e)
+```
+
+In comparison to the scalar_static_lines function, here one also has to specify the dimension
+of the variables on each vertex and edge. The vectors dim_v and dim_e have entries for every vertex
+and edge in the graph, the value of the entry fixes the number of variables. As a simple example, let's
+again look at a problem with scalar variables. The functions vertices! and edges! are as before:
+
+```julia
+dim_v = ones(Int32, length(vertices!))
+dim_e = ones(Int32, length(edges!))
+sl = static_lines(vertices!, edges!, g, dim_v, dim_e)
+```
+
+Every entry of the dimension vectors is one, so the variables on each vertex and edge are 1-dimensional.
+Note that one has to specify the ones type as Integer.
+
+The purpose of this function though is that we want treat higher dimensional problems. So let's look at an
+2-dimensional problem.
+
+```julia
+dim_v = 2 * ones(Int32, length(vertices!))
+dim_e = 2 * ones(Int32, length(edges!))
+```
+
+Now we fixed the dimension on every vertex and edge to 2, following from that the vertices! and edges! functions
+are also 2-dimensional. We again want to look at a diffusion problem, for that we have to change the vertices! function
+ due to a problem occuring with the sum function, namely that it is not able to deal with an Any-type empty set:
+
+```julia
+function vertex!(dv, v, e_s, e_d, p, t)
+    dv .= 0
+    for e in e_s
+        dv .-= e
+    end
+    for e in e_d
+        dv .+= e
+    end
+    nothing
+end
+
+vertices! = [vertex! for vertex in vertices(g)]
+```
+
+The edge! function stays the same. The arguments appearing in the functions are now
+all 2-dimensional, so in principle one could put for example non-diagonal matrices into play to
+establish an interaction between the different variables. As we did not do that here, what we expect
+is that we again get the same solution as before, but twice. To solve it, we now need to give the solver
+twice as many initial values x0, the pattern in the x vector goes [vertex1_variable1,vertex1_variable2,vertex2_variable1,...]:
+
+```julia
+x0 = rand(20)
+t = (0.,2.)
+sl = static_lines(vertices!,edges!,g,dim_v,dim_e)
+sl_prob = ODEProblem(ssl,x0,t)
+sol = solve(ssl_prob)
+plot(sol, legend = false)
+```
+
+#figure
+
+As we see, we get the solution of two independent diffusive networks.
+(Here one could put a more complex exmaple to showcase the functionality.)
+
+## Dynamic lines
+
+#### Scalar variables
+
+In general, currents do not solely depend on the vertex values they are connecting, but rather depend on its own value in some sort. For the case of scalar variables, we may use the function scalar_dynamic_lines:
+
+```julia
+sdl = scalar_dynamic_lines(vertices!,edges!,g)
+```
+
+The function arguments are now of the following form:
+
+```julia
+vertices![n](dv[n],v[n],e_s[n],e_t[n],p,t)
+edges![m](de[m],e[m],v_s,v_t,p,t)
+```
+
+Compared to the static lines case with scalar variables, the vertices! function keeps its structure whereas the edges! function gets the new argument de[m]. This de[m] is the derivative of the edge value of edge m.
+Let's look at a simple example: A system with dynamic lines which decay to the usual diffusive system:
+
+```julia
+vertices! = [(dv,v,l_s,l_t,p,t) -> dv .= sum(e_s) .- sum(e_t) for vertex in vertices(g)]
+edges! = [(de,e,v_s,v_t,p,t) -> de .= 1000*(v_s .- v_t .- e) for edge in edges(g)]
+```
+
+The change compared to the example for the static case should be clear; the factor of 1000 is just accelerating the decay. Again, we can quite simply solve this system. One has to be aware though that now one needs initial values for the vertices and the edges! These are given in the order x0 = [vertex1,vertex2,...,edge1,edge2,...]:
+
+```julia
+g = barabasi_albert(10,5) #generates a graph with 10 vertices and 25 edges
+x0 = rand(10 + 25)
+t = (0.,2.)
+sdl = scalar_dynamic_lines(vertices!,edges!,g)
+sdl_prob = ODEProblem(sdl,x0,t)
+sol = solve(sdl_prob)
+plot(sol, legend = false , vars = 1:10)
+```
+(Hier sollte ein Bild sein)
+
+We see that the plot looks pretty much the same as for the static lines case. That is, because we included the factor of 1000 in the edges! function. Note that we added the argument vars to the plot function, this gives us solely the first 10 arguments of x which are the vertices. One could also get just the edge values by writing vars = 11:35 if one wishes.
+
+
+#### Vector variables
+
+The step here is not a hard one, if one read through the previous Vector variables section. We can treat a system of vector variables with dynamic lines with the function dynamic_lines:
+
+```julia
+dl = dynamic_lines(vertices!,edges!,g,dim_v,dim_e)
+```
+
+One has to apply the same change to the vertices! function as for the static_lines function. Otherwise, everything should be clear. For the example, we take the decaying dynamic lines and just make two independent networks as for the Static lines:
+
+```julia
+dim_v = 2 * ones(Int32, length(vertices!))
+dim_e = 2 * ones(Int32, length(edges!))
+g = barabasi_albert(10,5)
+
+function vertex!(dv, v, e_s, e_d, p, t)
+    dv .= 0
+    for e in e_s
+        dv .-= e
+    end
+    for e in e_d
+        dv .+= e
+    end
+    nothing
+end
+
+vertices! = [vertex! for vertex in vertices(g)]
+edges! = [(de,e,v_s,v_t,p,t) -> de .= 1000*(v_s .- v_t .- e) for edge in edges(g)]
+
+dl = dynamic_lines(vertices!,edges!,g,dim_v,dim_e)
+
+x0 = rand(10 + 10 + 25 + 25)
+t= (0.,2.)
+dl_prob = ODEProblem(dl,x0,t)
+sol= solve(dl_prob)
+plot(sol, legend = false, vars = 1:20)
+```
+(Bild)
+
+We get the same pattern as for the scalar case, just twice.

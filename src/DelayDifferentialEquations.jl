@@ -44,10 +44,10 @@ end
 
 function (d::static_line_delayed)(dx, x, h, p, t)
     for i in 1:d.len_l
-        d.lines![i](d.l_e[i],x[d.s_e[i]], x[d.t_e[i]], h(p,t)[d.s_e[i]], h(p,t)[d.t_e[i]], p, t)
+        d.lines![i](d.l_e[i],x[d.s_e[i]], x[d.t_e[i]], h(p,t-1)[d.s_e[i]], h(p,t-1)[d.t_e[i]], p, t)
     end
     for i in 1:d.len_n
-        d.nodes![i](view(dx,i),x[i], h(p,t)[i], sum.(d.l_s[i]), sum.(d.l_t[i]), p, t)
+        d.nodes![i](view(dx,i),x[i], h(p,t-1)[i], sum.(d.l_s[i]), sum.(d.l_t[i]), p, t)
     end
     nothing
 end
@@ -97,7 +97,7 @@ test= static_line_delayed(nodes!,lines!,g)
 x0 = [1.0,2.0,3.0,4.0]
 h(p,t) = [1.0,2.0,3.0,4.0]
 
-testprob = DDEProblem(test,x0,h,(0.,50.))
+testprob = DDEProblem(test,x0,h,(0.,2.))
 sol =solve(testprob)
 
 plot(sol)
