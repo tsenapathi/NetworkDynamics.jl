@@ -15,7 +15,7 @@ function bc_model(du,u,h,p,t)
   du[1] = (v0/(1+beta0*(h(p, t-tau)[3]^2))) * (p0 - q0)*u[1] - d0*u[1]
   du[2] = (v0/(1+beta0*(h(p, t-tau)[3]^2))) * (1 - p0 + q0)*u[1] +
           (v1/(1+beta1*(h(p, t-tau)[3]^2))) * (p1 - q1)*u[2] - d1*u[2]
-  du[3] = (v1/(1+beta1*(h(p, t-tau;idxs=3)^2))) * (1 - p1 + q1)*u[2] - d2*u[3]
+  du[3] = (v1/(1+beta1*(h(p, t-tau, idxs = 3)[1]^2))) * (1 - p1 + q1)*u[2] - d2*u[3]
 end
 
 lags=[tau]
@@ -112,9 +112,7 @@ plot(sol)
 
 function delaytest(du,u,h,p,t)
     @. du = -u
-#    du[1] += h(p,t - 2.)[2]
-    du[[1,2]] += h(p,t - 2.;idxs=[1,2])[1:2]
-#    du[1] += indexed_h(h,2)(p,t - 2.)[1]
+    du[1] += indexed_h(h,2)(p,t - 2.)[1]
     nothing
 end
 
@@ -160,7 +158,7 @@ function (d::dynamic_lines_delayed)(dx, x, h, p, t)
             d.edges![i](dx[d.e_x_idx[i]], x[d.e_x_idx[i]], indexed_h(h,d.e_idx[i]), x[d.s_idx[i]], x[d.d_idx[i]],indexed_h(h,d.s_idx[i]),indexed_h(h,d.d_idx[i]), p, t)
         end
         for i in 1:d.num_v
-            d.vertices![i](dx[d.v_idx[i]], x[d.v_idx[i]], indexed_h(h,d.v_idx[i][1]), d.e_s[i], d.e_d[i], e_s_delayed(h,i,d.s_e,d.num_v,d.num_e,d.e_x_idx), e_d_delayed(h,i,d.d_e,d.num_v,d.num_e,d.e_x_idx) , p, t, d.tau_s[i],d.tau_d[i])
+            d.vertices![i](dx[d.v_idx[i]], x[d.v_idx[i]], indexed_h(h,d.v_idx[i]), d.e_s[i], d.e_d[i], e_s_delayed(h,i,d.s_e,d.num_v,d.num_e,d.e_x_idx), e_d_delayed(h,i,d.d_e,d.num_v,d.num_e,d.e_x_idx) , p, t, d.tau_s[i],d.tau_d[i])
         end
     else
         for i in 1:d.num_e
@@ -250,7 +248,7 @@ tau_d = [[0.01*rand(1)[1] for i_e in 1:ne(g) if i_v == d[i_e]] for i_v in 1:nv(g
 lines! = [(dl,l,h_l,x_s,x_t,h_s,h_t,p,t) -> dl .= x_s .- x_t .- l for e in edges(g)]
 
 function vertex!(dv,v,h,e_s,e_d,h_ss,h_ds,p,t,tau_s,tau_d)
-    dv .= -h(p,t)[1]
+    dv .= -h(p, t-1)
     i = 1
     j = 1
     for h_s in h_ss
@@ -277,9 +275,11 @@ x0 = rand(8)
 
 h0 = x0
 
-dld(x0,x0,h0,nothing,0.)
+h1(p, t; kwargs...) = x0
 
-dld_prob = DDEProblem(dld,x0,h0,(0.,2.))
+dld(x0,x0,h1,nothing,0.)
+
+dld_prob = DDEProblem(dld,x0,h1,(0.,2.),constant_lags=[1])
 
 sol= solve(dld_prob)
 

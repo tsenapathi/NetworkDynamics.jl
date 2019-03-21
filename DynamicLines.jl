@@ -1,8 +1,4 @@
-module DynamicLines
 
-using LightGraphs
-using LinearAlgebra
-using Parameters
 
 export dynamic_lines
 
@@ -102,5 +98,3 @@ function dynamic_lines(vertices!, edges!, g::AbstractGraph, dim_v, dim_e; no_par
     d_e = [dst(e) for e in edges(g)]
     dynamic_lines(vertices!, edges!, s_e, d_e, dim_v, dim_e, no_parameters)
 end
-
-end #module
