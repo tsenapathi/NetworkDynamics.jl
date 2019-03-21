@@ -6,7 +6,13 @@ using NetworkDynamics
 makedocs(
     sitename = "NetworkDynamics",
     format = Documenter.HTML(),
-    modules = [NetworkDynamics])
+    modules = [NetworkDynamics]
+    pages = [
+    "General" => "index.md",
+    "Functions_and_Constructors.md",
+    "StaticEdges.md",
+    "DynamicEdges.md",
+    ]) #Here we have to agree on the Page structure yet.
 
 # Documenter can also automatically deploy documentation to gh-pages.
 # See "Hosting Documentation" and deploydocs() in the Documenter manual
