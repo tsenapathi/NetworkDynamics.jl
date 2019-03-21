@@ -7,120 +7,235 @@ The key construction is a callable struct compatible with the
 DifferentialEquations.jl calling syntax.
 
 ```julia
-nd = network_dynamics(nodes!, lines!, s_e, t_e, dim_n, dim_l; symbols_n=nothing, symbols_l=nothing)
+nd = network_dynamics(vertices!, edges!, g)
 nd(dx, x, p, t)
 ```
 
 The first two parameters are the functions, or function arrays from which a network dynamics is
-constructed:
-
-``$nodes![n](dx, x, [l]_s, [l]_t, p, t)$``
-``$lines![e](dl, l, x_s, x_t, p, t)$``
-
-The arrays dim_n and dim_l encode the dimensionality of $x$ and $l$ variables.
-The arrays s_e and t_e encode the network structure by giving the source and
-target of each edge.
-
-Optionally we can also specify an array of symbols per edge and node that allow
-convenience access to the different nodal and line dimensions.
-
-Given edges $e$, and nodes $n$, as well as an orientation encoded by
-the source function $s(e)$ and the target function $t(e)$
-this implements the system of ODEs:
-
-``$\frac{dx_n}{dt} = dx_n$``
-
-``$\frac{dl_e}{dt} = dl_e$``
-
-with $dx$ and $dl$ calculated by
-
-``$[l]_s = [l_e \text{ if } s(e) = n]$``
-
-``$[l]_t = [l_e \text{ if } t(e) = n]$``
-
-``$nodes![n](dx_n, x_n, [l]_s, [l]_t, p_n, t)$``
-
-``$lines![e](dl_e, l_e, x_{s(e)}, x_{t(e)}, p_e, t)$``
-
-Something that relaxes to a diffusive network would for example be
-implemented by
-
-
-```julia
-lines = (dl, l, x_1, x_2) -> dl .= 1000. * ((x_1 - x_2) - l)
-nodes = (dx_n, x_n, l_s, l_t, p_n, t) -> dx_n .= f(x_n) - (sum(l_s) - sum(l_t))
-```
-
-The package also supplies a node and a line type that combine the the node
-function, the dimensionality and the symbols, as well as a constructor for the
-network dynamics from these types. Further Constructors are provided for
-LightGraphs:
-
-```julia
-nd=network_dynamics(nodes::Array{ODE_Node}, lines::Array{ODE_Line}, G::AbstractGraph)
-```
+built. The last parameter g is a graph encoding the network constructed with
+the LightGraphs.jl package.
+Note that the type network_dynamics is only a placeholder for the dynamics types we will now specify.
 
 ## Static lines
 
-For static line relations we similarly have:
+#### Scalar variables
+
+We will first look into the case where there is only a scalar variable on each vertex.
+A dynamical network with static lines (static meaning that the current on an edge depends solely on the
+values on the nodes it connects) is created via the scalar_static_lines function:
 
 ```julia
-sl_nd = static_lines_network_dynamics(nodes!, lines!, s_e, t_e, ...)
-sl_nd(dx, x, p, t)
+ssl = scalar_static_lines(vertices!, edges!, g)
 ```
 
-With the convention for lines given by:
-
-``$lines![e](l, x_s, x_t, p, t)$``
-
-and otherwise as above. This implements the system of ODEs:
-
-``$\frac{dx_n}{dt} = dx_n$``
-
-with $dx$ calculated by
-
-``$lines![e](l_e, x_{s(e)}, x_{t(e)}, p_e, t)$``
-
-``$[l]_s = [l_e \text{ if } s(e) = n]$``
-
-``$[l]_t = [l_e \text{ if } t(e) = n]$``
-
-``$nodes![n](dx_n, x_n, [l]_s, [l]_t, p_n, t)$``
-
-A diffusive network would be implemented by
+The functions vertices! and edges! are of the form:
 
 ```julia
-lines = (l, x_1, x_2) -> l .= x_1 - x_2
-nodes = (dx_n, x_n, l_s, l_t, p_n, t) -> dx_n .= f(x_n) - (sum(l_s) - sum(l_t))
+vertices![n](dv[n],v[n],e_s[n],e_t[n],p,t)
+edges![m](e[m],v_s,v_t,p,t)  
 ```
 
-The alternative constructor is given by:
+Specifically, the given variables are:
 
 ```julia
-sl_nd=static_lines_network_dynamics(nodes::Array{ODE_Node}, lines::Array{Static_Line}, G::AbstractGraph)
+e_s[n] = [e[m] if s[m] == n for m in 1:length(lines!)]
+e_t[n] = [e[m] if t[m] == n for m in 1:length(lines!)]
+v_s= v[s[m]]
+v_t= v[t[m]]
+```
+The vectors s and t contain the information about the source and target of each
+edge, i.e. s[1] == 2 -> The source of edge 1 is vertex 2. The function creates
+these vectors from the given graph, they can be accessed via the calling syntax
+ssl.s_e or ssl.t_e.
+The vectors e_s[n] and e_t[n] are containing the in- and outgoing edge values (or currents)
+of vertex n in the form of an array. Thus, one would classically sum over these in vertices!,
+but one is not restricted on doing this.
+
+For example, a system of equations describing a simple diffusive network would be:
+
+```julia
+using LightGraphs
+g= barabasi_albert(10,5)
+vertices! = [(dv,v,l_s,l_t,p,t) -> dv .= sum(e_s) .- sum(e_t) for vertex in vertices(g)]
+edges! = [(e,v_s,v_t,p,t) -> e .= v_s .- v_t for edge in edges(g)]
 ```
 
-## Network DAEs
+Here, the diffusiveness lies within the lines! function. It states that there is only
+a current between two nodes if these nodes have a non-equal value. This current then ultimatively
+leads to an equilibrium in which the value on any connected node is equal.
 
-Design question: Don't do implicit DAEs, support mass matrices everywhere by
-default. This adds two more (optional) arrays of vectors to the signature of
-the constructor and the ODE_Node and the Static_Line types.
+Note that one should (for performance reasons) and actually needs to put a dot before the mathematical operators.
+This is due to the use of views in the internals of the scalar_static_lines function.
 
-The advantage is that we can then deal with only three types of dynamics, ODE,
-SDE and DDE. Leaning towards yes on this. The important special case of all ODE
-can then be done via a performance optimization.
+We finally want to solve the defined diffusive system. This we do by using the well-known
+package DifferentialEquations.jl (see [here](http://docs.juliadiffeq.org/latest/)). We also need to specify a set of initial values x0 as well as a time
+interval t for which we are solving the problem:
 
-This would suggest splitting this into three sub packages, ODE, SDE and DDE.
-Each sub package should define its own XDE_Node and XDE_line as well as
-promotion rules from other XDE_Node and XDE_line types.
-
-## Network SDEs
-## Network DDEs
-
-## Convenience functions for symbolic access to node variables
-
-## API
-
-```@autodocs
-Modules = [NetworkDynamics]
+```julia
+using DifferentialEquations
+using Plots
+x0 = rand(10)
+t = (0.,2.)
+ssl = scalar_static_lines(vertices!,edges!,g)
+ssl_prob = ODEProblem(ssl,x0,t)
+sol = solve(ssl_prob)
+plot(sol, legend = false)
 ```
+
+![](sslfig.pdf)
+
+As one would expect in a diffusive network, the values on the vertices converge.
+
+
+#### Vector variables
+
+In most cases, one is interested in problems with multiple variables on the vertices,
+one can deal with these problems by using the, compared to the previous more general,
+static_lines function:
+
+```julia
+sl = static_lines(vertices!, edges!, g, dim_v, dim_e)
+```
+
+In comparison to the scalar_static_lines function, here one also has to specify the dimension
+of the variables on each vertex and edge. The vectors dim_v and dim_e have entries for every vertex
+and edge in the graph, the value of the entry fixes the number of variables. As a simple example, let's
+again look at a problem with scalar variables. The functions vertices! and edges! are as before:
+
+```julia
+dim_v = ones(Int32, length(vertices!))
+dim_e = ones(Int32, length(edges!))
+sl = static_lines(vertices!, edges!, g, dim_v, dim_e)
+```
+
+Every entry of the dimension vectors is one, so the variables on each vertex and edge are 1-dimensional.
+Note that one has to specify the ones type as Integer.
+
+The purpose of this function though is that we want treat higher dimensional problems. So let's look at an
+2-dimensional problem.
+
+```julia
+dim_v = 2 * ones(Int32, length(vertices!))
+dim_e = 2 * ones(Int32, length(edges!))
+```
+
+Now we fixed the dimension on every vertex and edge to 2, following from that the vertices! and edges! functions
+are also 2-dimensional. We again want to look at a diffusion problem, for that we have to change the vertices! function
+ due to a problem occuring with the sum function, namely that it is not able to deal with an Any-type empty set:
+
+```julia
+function vertex!(dv, v, e_s, e_d, p, t)
+    dv .= 0
+    for e in e_s
+        dv .-= e
+    end
+    for e in e_d
+        dv .+= e
+    end
+    nothing
+end
+
+vertices! = [vertex! for vertex in vertices(g)]
+```
+
+The edge! function stays the same. The arguments appearing in the functions are now
+all 2-dimensional, so in principle one could put for example non-diagonal matrices into play to
+establish an interaction between the different variables. As we did not do that here, what we expect
+is that we again get the same solution as before, but twice. To solve it, we now need to give the solver
+twice as many initial values x0, the pattern in the x vector goes [vertex1_variable1,vertex1_variable2,vertex2_variable1,...]:
+
+```julia
+x0 = rand(20)
+t = (0.,2.)
+sl = static_lines(vertices!,edges!,g,dim_v,dim_e)
+sl_prob = ODEProblem(ssl,x0,t)
+sol = solve(ssl_prob)
+plot(sol, legend = false)
+```
+
+#figure
+
+As we see, we get the solution of two independent diffusive networks.
+(Here one could put a more complex exmaple to showcase the functionality.)
+
+## Dynamic lines
+
+#### Scalar variables
+
+In general, currents do not solely depend on the vertex values they are connecting, but rather depend on its own value in some sort. For the case of scalar variables, we may use the function scalar_dynamic_lines:
+
+```julia
+sdl = scalar_dynamic_lines(vertices!,edges!,g)
+```
+
+The function arguments are now of the following form:
+
+```julia
+vertices![n](dv[n],v[n],e_s[n],e_t[n],p,t)
+edges![m](de[m],e[m],v_s,v_t,p,t)
+```
+
+Compared to the static lines case with scalar variables, the vertices! function keeps its structure whereas the edges! function gets the new argument de[m]. This de[m] is the derivative of the edge value of edge m.
+Let's look at a simple example: A system with dynamic lines which decay to the usual diffusive system:
+
+```julia
+vertices! = [(dv,v,l_s,l_t,p,t) -> dv .= sum(e_s) .- sum(e_t) for vertex in vertices(g)]
+edges! = [(de,e,v_s,v_t,p,t) -> de .= 1000*(v_s .- v_t .- e) for edge in edges(g)]
+```
+
+The change compared to the example for the static case should be clear; the factor of 1000 is just accelerating the decay. Again, we can quite simply solve this system. One has to be aware though that now one needs initial values for the vertices and the edges! These are given in the order x0 = [vertex1,vertex2,...,edge1,edge2,...]:
+
+```julia
+g = barabasi_albert(10,5) #generates a graph with 10 vertices and 25 edges
+x0 = rand(10 + 25)
+t = (0.,2.)
+sdl = scalar_dynamic_lines(vertices!,edges!,g)
+sdl_prob = ODEProblem(sdl,x0,t)
+sol = solve(sdl_prob)
+plot(sol, legend = false , vars = 1:10)
+```
+(Hier sollte ein Bild sein)
+
+We see that the plot looks pretty much the same as for the static lines case. That is, because we included the factor of 1000 in the edges! function. Note that we added the argument vars to the plot function, this gives us solely the first 10 arguments of x which are the vertices. One could also get just the edge values by writing vars = 11:35 if one wishes.
+
+
+#### Vector variables
+
+The step here is not a hard one, if one read through the previous Vector variables section. We can treat a system of vector variables with dynamic lines with the function dynamic_lines:
+
+```julia
+dl = dynamic_lines(vertices!,edges!,g,dim_v,dim_e)
+```
+
+One has to apply the same change to the vertices! function as for the static_lines function. Otherwise, everything should be clear. For the example, we take the decaying dynamic lines and just make two independent networks as for the Static lines:
+
+```julia
+dim_v = 2 * ones(Int32, length(vertices!))
+dim_e = 2 * ones(Int32, length(edges!))
+g = barabasi_albert(10,5)
+
+function vertex!(dv, v, e_s, e_d, p, t)
+    dv .= 0
+    for e in e_s
+        dv .-= e
+    end
+    for e in e_d
+        dv .+= e
+    end
+    nothing
+end
+
+vertices! = [vertex! for vertex in vertices(g)]
+edges! = [(de,e,v_s,v_t,p,t) -> de .= 1000*(v_s .- v_t .- e) for edge in edges(g)]
+
+dl = dynamic_lines(vertices!,edges!,g,dim_v,dim_e)
+
+x0 = rand(10 + 10 + 25 + 25)
+t= (0.,2.)
+dl_prob = ODEProblem(dl,x0,t)
+sol= solve(dl_prob)
+plot(sol, legend = false, vars = 1:20)
+```
+(Bild)
+
+We get the same pattern as for the scalar case, just twice.
