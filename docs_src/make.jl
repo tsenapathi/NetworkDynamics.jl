@@ -5,9 +5,9 @@ using NetworkDynamics
 
 makedocs(
     sitename = "NetworkDynamics",
-    format = Documenter.HTML(canonical = "https://juliaenergy.github.io/NetworkDynamics.jl/"),
-    linkcheck=true
-    modules = [NetworkDynamics]
+    format = Documenter.HTML(canonical = "https://FHell.github.io/NetworkDynamics.jl/"),
+    linkcheck=true,
+    modules = [NetworkDynamics],
     pages = [
     "General" => "index.md",
     "Functions_and_Constructors.md",
