@@ -1,4 +1,4 @@
-## Functions
+# Functions
 
 The Dynamics for the whole Network is constructed from functions for the single vertices and edges. There are several types:
 
@@ -6,12 +6,12 @@ The Dynamics for the whole Network is constructed from functions for the single 
 ODEVertex(vertexfunction!, dimension, massmatrix, sym)
 StaticEdge(edgefunction!, dimension)
 ODEEdge(edgefunction!, dimension, massmatrix, sym)
-````
+```
 
 
 ### ODEVertex
 
-The arguments mean the following: vertexfunction is catching the dynamics of a single vertex depending on the vertex value itself as well as in- and outgoing currents (or edges). An example for such a function would be:
+The arguments mean the following: vertexfunction! is catching the dynamics of a single vertex depending on the vertex value itself as well as in- and outgoing currents (or edges). An example for such a function would be:
 
 ```julia
 function vertexfunction!(dv, v, e_s, e_d, p, t)
@@ -91,7 +91,7 @@ Then the function defaults to using the identity as mass matrix as well as using
 
 ## Constructor
 
-The central constructor of this package is network_dynamics, this function demands an array of VertexFunction and EdgeFunction as well as a graph (see LightGraphs), and returns an ODEFunction which one can easily solve via the tools given in DifferentialEquations.jl. One calls it via:
+The central constructor of this package is network_dynamics(), this function demands an array of VertexFunction and EdgeFunction as well as a graph (see LightGraphs), and returns an ODEFunction which one can easily solve via the tools given in DifferentialEquations.jl. One calls it via:
 
 ```@docs
 network_dynamics(Array{VertexFunction}, Array{EdgeFunction}, graph)

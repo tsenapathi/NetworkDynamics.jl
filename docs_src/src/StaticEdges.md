@@ -1,13 +1,13 @@
-## Static lines
+# Static edges
 
 #### Scalar variables
 
 We will first look into the case where there is only a scalar variable on each vertex.
-A dynamical network with static lines (static meaning that the current on an edge depends solely on the
-values on the nodes it connects) is created via the scalar_static_lines function:
+A dynamical network with static edges (static meaning that the current on an edge depends solely on the
+values on the vertices it connects) is created via the nd_ODE_Static_scalar function:
 
 ```julia
-ssl = scalar_static_lines(vertices!, edges!, g)
+ssl = nd_ODE_Static_scalar(vertices!, edges!, g)
 ```
 
 The functions vertices! and edges! are of the form:
@@ -20,8 +20,8 @@ edges![m](e[m],v_s,v_t,p,t)
 Specifically, the given variables are:
 
 ```julia
-e_s[n] = [e[m] if s[m] == n for m in 1:length(lines!)]
-e_t[n] = [e[m] if t[m] == n for m in 1:length(lines!)]
+e_s[n] = [e[m] if s[m] == n for m in 1:length(edges!)]
+e_t[n] = [e[m] if t[m] == n for m in 1:length(edges!)]
 v_s= v[s[m]]
 v_t= v[t[m]]
 ```
@@ -42,12 +42,12 @@ vertices! = [(dv,v,l_s,l_t,p,t) -> dv .= sum(e_s) .- sum(e_t) for vertex in vert
 edges! = [(e,v_s,v_t,p,t) -> e .= v_s .- v_t for edge in edges(g)]
 ```
 
-Here, the diffusiveness lies within the lines! function. It states that there is only
-a current between two nodes if these nodes have a non-equal value. This current then ultimatively
-leads to an equilibrium in which the value on any connected node is equal.
+Here, the diffusiveness lies within the edges! function. It states that there is only
+a current between two vertices if these vertices have a non-equal value. This current then ultimatively
+leads to an equilibrium in which the value on any connected vertex is equal.
 
 Note that one should (for performance reasons) and actually needs to put a dot before the mathematical operators.
-This is due to the use of views in the internals of the scalar_static_lines function.
+This is due to the use of views in the internals of the nd_ODE_Static_scalar function.
 
 We finally want to solve the defined diffusive system. This we do by using the well-known
 package DifferentialEquations.jl (see [here](http://docs.juliadiffeq.org/latest/)). We also need to specify a set of initial values x0 as well as a time
@@ -58,7 +58,7 @@ using DifferentialEquations
 using Plots
 x0 = rand(10)
 t = (0.,2.)
-ssl = scalar_static_lines(vertices!,edges!,g)
+ssl = nd_ODE_Static_scalar(vertices!,edges!,g)
 ssl_prob = ODEProblem(ssl,x0,t)
 sol = solve(ssl_prob)
 plot(sol, legend = false)
