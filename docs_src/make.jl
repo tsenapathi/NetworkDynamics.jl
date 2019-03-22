@@ -5,7 +5,7 @@ using NetworkDynamics
 
 makedocs(
     sitename = "NetworkDynamics",
-    format = Documenter.HTML(canonical = "https://juliaenergy.github.io/NetworkDynamics.jl/stable/"),
+    format = Documenter.HTML(canonical = "https://juliaenergy.github.io/NetworkDynamics.jl/"),
     linkcheck=true
     modules = [NetworkDynamics]
     pages = [

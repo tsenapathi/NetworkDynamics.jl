@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>- · NetworkDynamics</title><link rel="canonical" href="https://juliaenergy.github.io/NetworkDynamics.jl/Functions_and_Constructors/index.html"/><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link href="../assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>NetworkDynamics</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../">General</a></li><li class="current"><a class="toctext" href>-</a><ul class="internal"><li><a class="toctext" href="#Functions-1">Functions</a></li></ul></li><li><a class="toctext" href="../StaticEdges/">-</a></li><li><a class="toctext" href="../DynamicEdges/">-</a></li></ul></nav><article id="docs"><header><nav><ul><li><a href>-</a></li></ul><a class="edit-page" href="https://github.com/FHell/NetworkDynamics.jl/blob/master/docs_src/src/Functions_and_Constructors.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>-</span><a class="fa fa-bars" href="#"></a></div></header><h2><a class="nav-anchor" id="Functions-1" href="#Functions-1">Functions</a></h2><p>The Dynamics for the whole Network is constructed from functions for the single vertices and edges. There are several types:</p><pre><code class="language-none">ODEVertex(vertexfunction!, dimension, massmatrix, sym)
+StaticEdge(edgefunction!, dimension)
+ODEEdge(edgefunction!, dimension, massmatrix, sym)
+````
+
+
+### ODEVertex
+
+The arguments mean the following: vertexfunction is catching the dynamics of a single vertex depending on the vertex value itself as well as in- and outgoing currents (or edges). An example for such a function would be:
+</code></pre><p>julia function vertexfunction!(dv, v, e<em>s, e</em>d, p, t)   dv .= 0   for e in e<em>s     dv .-= e   end   for e in e</em>d     dv .+= e   end end</p><pre><code class="language-none">
+The e_s and e_d are arrays containing the edges that have the decribed vertex as source and destination. Other arguments coincide with the usual ODE function arguments. The vertexfunction given to ODEVertex always needs to have the shown argument structure. Note the importance of the broadcast structure of the equations (the dot before every operator), this is necessary due to the use of views in the internal functions.
+
+dimension is the number of Variables on the Vertex.
+
+massmatrix is the mass matrix M, i.e.
+</code></pre><p>@docs M*dv = vertexfunction!</p><pre><code class="language-none">
+sym are the symbols of the Vertex. If one had for example a vertex with a frequency and some angle, one would construct sym via:
+</code></pre><p>@docs sym = [:omega, :phi]</p><pre><code class="language-none">
+This makes it easier to later fish out the interesting variables one wants to look at.
+
+One may also call ODEVertex via:
+</code></pre><p>@docs ODEVertex(vertexfunction!, dimension)</p><pre><code class="language-none">
+The function then defaults to using the identity as mass matrix and [:v for i in 1:dimension] as symbols.
+
+
+### StaticEdge
+
+Static here means, that the edge value described by edgefunction! solely depends on the vertex values the edge connects. One very simple and natural example is a diffusive system:
+</code></pre><p>@julia edgefunction! = (e, v<em>s, v</em>d, p, t) -&gt; e .= v<em>s .- v</em>d</p><pre><code class="language-none">
+v_s and v_d are the vertex values of the edges source and destination. There is no derivative of the edge value involved, hence we call these problems static.
+
+dimension: see ODEVertex
+
+### ODEEdge
+
+For Problems where the derivative of the edge value indeed depends on the edge value itself, we use the ODEEdge function. Another simple and natural example is a system that quickly diffuses to the static case:
+</code></pre><p>@julia edgefunction! = (de, e, v<em>s, v</em>d, p, t) -&gt; de .= 1000 * (v<em>s .- v</em>d .- e)</p><pre><code class="language-none">
+dimension: see ODEVertex
+
+massmatrix: see ODEVertex
+
+sym: see ODEVertex
+
+Also, one can construct an ODEEdge by only giving the first two arguments:
+</code></pre><p>@docs ODEEdge(edgefunction!, dimension)</p><pre><code class="language-none">
+Then the function defaults to using the identity as mass matrix as well as using [:e for in 1:dimension] as sym.
+
+
+
+
+## Constructor
+
+The central constructor of this package is network_dynamics, this function demands an array of VertexFunction and EdgeFunction as well as a graph (see LightGraphs), and returns an ODEFunction which one can easily solve via the tools given in DifferentialEquations.jl. One calls it via:
+</code></pre><p>@docs network_dynamics(Array{VertexFunction}, Array{EdgeFunction}, graph) ```</p><footer><hr/><a class="previous" href="../"><span class="direction">Previous</span><span class="title">General</span></a><a class="next" href="../StaticEdges/"><span class="direction">Next</span><span class="title">-</span></a></footer></article></body></html>
