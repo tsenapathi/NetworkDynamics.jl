@@ -19,7 +19,6 @@ export nd_ODE_ODE_scalar
     num_v
 end
 
-
 function (d::nd_ODE_ODE_scalar)(dx, x, p, t)
     for i in 1:d.num_e
         d.e[i] .= x[d.num_v+i]
@@ -42,7 +41,7 @@ function (d::nd_ODE_ODE_scalar)(dx, x, p::Nothing, t)
     nothing
 end
 
-function nd_ODE_ODE_scalar(vertices!, edges!, s_e, t_e)
+function nd_ODE_ODE_scalar(vertices!, edges!, s_e::Array{Int64}, t_e::Array{Int64})
     num_e = length(edges!)
     num_v = length(vertices!)
 
