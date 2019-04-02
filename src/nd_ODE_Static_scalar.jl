@@ -29,7 +29,7 @@ function (d::nd_ODE_Static_scalar)(dx, x, p::Nothing, t)
         d.edges![i](d.e[i], x[d.s_e[i]], x[d.t_e[i]], p, t)
     end
     for i in 1:d.num_v
-        d.vertices![i](view(dx,i), x[i], sum.(d.e_s[i]), sum.(d.e_t[i]), p, t)
+        d.vertices![i](view(dx,i), x[i], d.e_s[i], d.e_t[i], p, t)
     end
     nothing
 end
@@ -39,7 +39,7 @@ function (d::nd_ODE_Static_scalar)(dx, x, p, t)
         d.edges![i](d.e[i], x[d.s_e[i]], x[d.t_e[i]], p[d.num_v + i], t)
     end
     for i in 1:d.num_v
-        d.vertices![i](view(dx,i), x[i], sum.(d.e_s[i]), sum.(d.e_t[i]), p[i], t)
+        d.vertices![i](view(dx,i), x[i], d.e_s[i], d.e_t[i], p[i], t)
     end
     nothing
 end
