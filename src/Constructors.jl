@@ -1,5 +1,9 @@
 module Constructors
 
+
+
+# Not in use right now. Shifted into NetworkDynamics.jl for reasons.
+
 using LightGraphs
 using DifferentialEquations
 using SparseArrays

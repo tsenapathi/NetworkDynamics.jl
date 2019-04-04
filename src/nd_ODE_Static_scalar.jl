@@ -7,9 +7,17 @@ using LinearAlgebra
 
 export nd_ODE_Static_scalar
 
-"""
-Documentation!!
-"""
+#= nd_ODE_Static_scalar constructs a (dx,x,p,t)-function from an Array of functions for the vertices,
+ edges as well as a graph.
+The arguments of the vertex functions must be of the form (dv,v,e_s,e_d,p,t),
+where dv is the vertex variable derivative, v the vertex variable and e_s and e_d Arrays of edge variables that
+have the vertex as source and destination respectively. p and t are as usual.
+The arguments of the edge functions must be of the form (e,v_s,v_d,p,t),
+where e is the edge variable and v_s and v_d the vertex variables of the vertices
+the edge has as source and destination respectively.
+This works only for scalar variables, check out nd_ODE_Static for multi-dim variables. =#
+
+# See the other nd_ Constructors for details on the fields.
 @with_kw struct nd_ODE_Static_scalar
     vertices!
     edges!

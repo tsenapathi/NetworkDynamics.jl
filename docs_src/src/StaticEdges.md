@@ -1,5 +1,7 @@
 # Static edges
 
+OUTDATED
+
 #### Scalar variables
 
 We will first look into the case where there is only a scalar variable on each vertex.

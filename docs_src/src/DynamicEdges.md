@@ -1,5 +1,7 @@
 # Dynamic edges
 
+OUTDATED
+
 #### Scalar variables
 
 In general, currents do not solely depend on the vertex values they are connecting, but rather depend on its own value in some sort. For the case of scalar variables, we may use the function nd_ODE_ODE_scalar:
