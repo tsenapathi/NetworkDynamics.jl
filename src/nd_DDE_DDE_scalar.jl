@@ -31,11 +31,11 @@ function (ih::indexed_h)(args...)
 end
 
 function e_s_delayed(h, p, t, tau_s, s_e, i, num_v, num_e)
-    [h(p,t-tau_s[i])[num_v + j] for j in 1:num_e if s_e[j] == i]
+    [h(p,t-tau_s[i], idxs = num_v + j) for j in 1:num_e if s_e[j] == i]
 end
 
 function e_d_delayed(h, p, t, tau_d, t_e, i, num_v, num_e)
-    [h(p,t-tau_d[i])[num_v + j] for j in 1:num_e if t_e[j] == i]
+    [h(p,t-tau_d[i], idxs = num_v + j) for j in 1:num_e if t_e[j] == i]
 end
 
 function (d::nd_DDE_DDE_scalar)(dx, x, h, p, t)
@@ -92,5 +92,6 @@ function nd_DDE_DDE_scalar(vertices!, edges!, g::AbstractGraph, tau_s, tau_d)
     t_e = [dst(e) for e in edges(g)]
     nd_DDE_DDE_scalar(vertices!, edges!, s_e, t_e, tau_s, tau_d)
 end
+
 
 end # module
