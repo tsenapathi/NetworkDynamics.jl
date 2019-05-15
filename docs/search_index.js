@@ -37,7 +37,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Functions",
     "title": "Functions",
     "category": "section",
-    "text": "The Dynamics for the whole Network is constructed from functions for the single vertices and edges. There are several types:ODEVertex(vertexfunction!, dimension, massmatrix, sym)\r\nStaticEdge(edgefunction!, dimension)\r\nODEEdge(edgefunction!, dimension, massmatrix, sym)"
+    "text": "The Dynamics for the whole Network is constructed from functions for the single vertices and edges. There are several types:ODEVertex(vertexfunction!, dimension, mass_matrix, sym)\r\nStaticEdge(edgefunction!, dimension)\r\nODEEdge(edgefunction!, dimension, mass_matrix, sym)"
 },
 
 {
@@ -45,7 +45,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Functions",
     "title": "ODEVertex",
     "category": "section",
-    "text": "The arguments mean the following: vertexfunction! is catching the dynamics of a single vertex depending on the vertex value itself as well as in- and outgoing currents (or edges). An example for such a function would be:function vertexfunction!(dv, v, e_s, e_d, p, t)\r\n  dv .= 0\r\n  for e in e_s\r\n    dv .-= e\r\n  end\r\n  for e in e_d\r\n    dv .+= e\r\n  end\r\nendThe es and ed are arrays containing the edges that have the decribed vertex as source and destination. Other arguments coincide with the usual ODE function arguments. The vertexfunction given to ODEVertex always needs to have the shown argument structure. Note the importance of the broadcast structure of the equations (the dot before every operator), this is necessary due to the use of views in the internal functions, it further provides a boost to the performance of the solver.dimension is the number of Variables on the Vertex.massmatrix is the mass matrix M, i.e.M*dv = vertexfunction!sym are the symbols of the Vertex. If one had for example a vertex with a frequency and some angle, one would construct sym via:sym = [:omega, :phi]This makes it easier to later fish out the interesting variables one wants to look at.One may also call ODEVertex via:ODEVertex(vertexfunction!, dimension)The function then defaults to using the identity as mass matrix and [:v for i in 1:dimension] as symbols."
+    "text": "The arguments mean the following: vertexfunction! is catching the dynamics of a single vertex depending on the vertex value itself as well as in- and outgoing currents (or edges). An example for such a function would be:function vertexfunction!(dv, v, e_s, e_d, p, t)\r\n  dv .= 0\r\n  for e in e_s\r\n    dv .-= e\r\n  end\r\n  for e in e_d\r\n    dv .+= e\r\n  end\r\nendThe es and ed are arrays containing the edges that have the decribed vertex as source and destination. Other arguments coincide with the usual ODE function arguments. The vertexfunction given to ODEVertex always needs to have the shown argument structure. Note the importance of the broadcast structure of the equations (the dot before every operator), this is necessary due to the use of views in the internal functions, it further provides a boost to the performance of the solver.dimension is the number of Variables on the Vertex.mass_matrix is the mass matrix M, i.e.M*dv = vertexfunction!sym are the symbols of the Vertex. If one had for example a vertex with a frequency and some angle, one would construct sym via:sym = [:omega, :phi]This makes it easier to later fish out the interesting variables one wants to look at.One may also call ODEVertex via:ODEVertex(vertexfunction!, dimension)The function then defaults to using the identity as mass matrix and [:v for i in 1:dimension] as symbols."
 },
 
 {
@@ -61,7 +61,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Functions",
     "title": "ODEEdge",
     "category": "section",
-    "text": "For Problems where edgefunction also contains the differential of an edge value , we use the ODEEdge function. Another simple and natural example for such a system is one that quickly diffuses to the static case:edgefunction! = (de, e, v_s, v_d, p, t) -> de .= 1000 * (v_s .- v_d .- e)dimension: see ODEVertexmassmatrix: see ODEVertexsym: see ODEVertexAlso, one can construct an ODEEdge by only giving the first two arguments:ODEEdge(edgefunction!, dimension)Then the function defaults to using the identity as mass matrix as well as using [:e for in 1:dimension] as sym."
+    "text": "For Problems where edgefunction also contains the differential of an edge value , we use the ODEEdge function. Another simple and natural example for such a system is one that quickly diffuses to the static case:edgefunction! = (de, e, v_s, v_d, p, t) -> de .= 1000 * (v_s .- v_d .- e)dimension: see ODEVertexmass_matrix: see ODEVertexsym: see ODEVertexAlso, one can construct an ODEEdge by only giving the first two arguments:ODEEdge(edgefunction!, dimension)Then the function defaults to using the identity as mass matrix as well as using [:e for in 1:dimension] as sym."
 },
 
 {

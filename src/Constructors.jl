@@ -25,50 +25,55 @@ include("Functions.jl")
 using ...NDFunctions
 
 #=
-The internal constructors are named as Vertex type, edge type and scalarity:
+The internal constructors are named by vertex type and edge type:
 
-_network_dynamics_ODE_ODE
-_network_dynamics_ODE_Static
-_network_dynamics_ODE_ODE_scalar
-_network_dynamics_ODE_Static_scalar
+nd_ODE_Static
+nd_ODE_ODE
 =#
+
+export network_dynamics
 
 function network_dynamic(vertices!,  edges!, graph)
     try
-        va = Array{NDFunctions.VertexFunction}(vertices!)
+        va! = Array{NDFunctions.VertexFunction}(vertices!)
     catch err
-        println("Cannot convert the Vertices to an Array{VertexFunction}!")
+        println("Cannot convert the vertices to an Array{VertexFunction}!")
         println(err)
         return nothing
     end
-    ve = Array{NDFunctions.EdgeFunction}(edges!)
+    try
+        ea! = Array{NDFunctions.EdgeFunction}(edges!)
+    catch err
+        println("Cannot convert the edges to an Array{EdgeFunction}!")
+        println(err)
+        return nothing
+    end
+    network_dynamic(va!,  ea!, graph)
 end
-
-export network_dynamics
 
 function network_dynamics(vertices!::Array{ODEVertex,1}, edges!::Array{StaticEdge,1}, graph)
     @assert length(vertices!) == length(vertices(graph))
     @assert length(edges!) == length(edges(graph))
-    massmatrix = nothing # Construct Mass Matrix from vertices! and edges!
     vertex_functions = [v.f! for v in vertices!]
     dim_v = [v.dim for v in vertices!]
     edge_functions = [e.f! for e in edges!]
     dim_e = [e.dim for e in edges!]
     dim_nd = sum(dim_v)
-    massmatrix = sparse(1.0I,dim_nd,dim_nd) # Construct Mass Matrix from vertices! and edges!
 
-    if all(dim_v .== 1) && all(dim_e .== 1)
-        nd! = nd_ODE_Static_scalar(vertex_functions, edge_functions, graph)
-        ODEFunction(nd!)
+    nd! = nd_ODE_Static(vertex_functions, edge_functions, graph, dim_v, dim_e)
+
+    if all([v.mass_matrix == I for v in vertices!])
+        mass_matrix = I
     else
-        nd! = nd_ODE_Static(vertex_functions, edge_functions, graph, dim_v, dim_e)
-        for i in 1:length(vertex_functions)
-            for idx in nd!.v_idx
-                massmatrix[idx,idx] = vertices![i].massmatrix
+        mass_matrix = sparse(1.0I,dim_nd,dim_nd) # Construct Mass Matrix from vertices! and edges!
+        for i, idx in enumerate(nd!.v_idx)
+            if vertices![i].mass_matrix != I
+                mass_matrix[idx,idx] = vertices![i].mass_matrix
             end
         end
-        ODEFunction(nd!,mass_matrix = massmatrix)
     end
+
+    ODEFunction(nd!,mass_matrix = mass_matrix)
 end
 
 
@@ -81,47 +86,26 @@ function network_dynamics(vertices!::Array{ODEVertex}, edges!::Array{ODEEdge}, g
     edge_functions = [e.f! for e in edges!]
     dim_e = [e.dim for e in edges!]
     dim_nd = sum(dim_e) + sum(dim_v)
-    massmatrix = sparse(1.0I,dim_nd,dim_nd) # Construct Mass Matrix from vertices! and edges!
 
-    if all(dim_v .== 1) && all(dim_e .== 1)
-        nd! = nd_ODE_ODE_scalar(vertex_functions, edge_functions, graph)
-        ODEFunction(nd!)
+    nd! = nd_ODE_ODE(vertex_functions, edge_functions, graph, dim_v, dim_e)
+
+    if all([v.mass_matrix == I for v in vertices!])
+        mass_matrix = I
     else
-        nd! = nd_ODE_ODE(vertex_functions, edge_functions, graph, dim_v, dim_e)
-        for i in 1:length(vertex_functions)
-            for idx in nd!.v_idx
-                massmatrix[idx,idx] = vertices![i].massmatrix
+        mass_matrix = sparse(1.0I,dim_nd,dim_nd) # Construct Mass Matrix from vertices! and edges!
+        for i, idx in enumerate(nd!.v_idx)
+            if vertices![i].mass_matrix != I
+                mass_matrix[idx,idx] = vertices![i].mass_matrix
             end
         end
-        for i in 1:length(edge_functions)
-            for idx in nd!.e_x_idx
-                massmatrix[idx,idx] = edges![i].massmatrix
+        for i, idx in enumerate(nd!.e_x_idx)
+            if edges![i].mass_matrix != I
+                mass_matrix[idx,idx] = edges![i].mass_matrix
             end
         end
-        ODEFunction(nd!,mass_matrix = massmatrix)
     end
+
+    ODEFunction(nd!,mass_matrix = mass_matrix)
 end
-
-#=
-Future work
-"""
-Write docstrings
-"""
-function network_dynamics(vertex!::ODEVertex, edge!::ODEEdge, graph)
-    throw("unimplemented")
-    @assert length(vertices!) == length(nodes(graph))
-    massmatrix = nothing # Construct Mass Matrix from vertices! and edges!
-    vertex_functions = [v.f! for v in vertex!]
-    dim_v = [v.dim for v in vertices!]
-    if all(dim_v .== 1) && all(dim_e .== 1)
-        nd! = scalar_homogeneous_network_dynamics(vertex_functions, ...)
-    else
-        nd! = full_homogeneous_network_dynamics(vertex_functions, dim_v, ...)
-    end
-    ODEFunction(nd!, massmatrix)
-end
-
-=#
-
 
 end # module
