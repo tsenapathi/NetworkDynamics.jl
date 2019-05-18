@@ -3,9 +3,9 @@
 The Dynamics for the whole Network is constructed from functions for the single vertices and edges. There are several types:
 
 ```@docs
-ODEVertex(vertexfunction!, dimension, massmatrix, sym)
+ODEVertex(vertexfunction!, dimension, mass_matrix, sym)
 StaticEdge(edgefunction!, dimension)
-ODEEdge(edgefunction!, dimension, massmatrix, sym)
+ODEEdge(edgefunction!, dimension, mass_matrix, sym)
 ```
 
 
@@ -29,7 +29,7 @@ The e_s and e_d are arrays containing the edges that have the decribed vertex as
 
 **dimension** is the number of Variables on the Vertex.
 
-**massmatrix** is the mass matrix M, i.e.
+**mass_matrix** is the mass matrix M, i.e.
 
 ```@docs
 M*dv = vertexfunction!
@@ -74,7 +74,7 @@ edgefunction! = (de, e, v_s, v_d, p, t) -> de .= 1000 * (v_s .- v_d .- e)
 
 **dimension**: see ODEVertex
 
-**massmatrix**: see ODEVertex
+**mass_matrix**: see ODEVertex
 
 **sym**: see ODEVertex
 
