@@ -5,3 +5,4 @@ LinearAlgebra
 NLsolve
 Parameters
 SparseArrays
+Reexport
