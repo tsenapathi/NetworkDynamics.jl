@@ -83,8 +83,8 @@ function GraphStruct(g, v_dims, e_dims)
     s_e_idx = [v_idx[s_e[i_e]] for i_e in 1:num_e]
     d_e_idx = [v_idx[d_e[i_e]] for i_e in 1:num_e]
 
-    e_s_v_dat = [[(offset, dim) for (i, (offset, dim)) in enumerate(zip(v_offs, v_dims)) if i == s_e[e]] for e in 1:num_e]
-    e_d_v_dat = [[(offset, dim) for (i, (offset, dim)) in enumerate(zip(v_offs, v_dims)) if i == d_e[e]] for e in 1:num_e]
+    e_s_v_dat = [[(offset, dim) for (i_e, (offset, dim)) in enumerate(zip(e_offs, e_dims)) if i_v == s_e[i_e]] for i_v in 1:num_v]
+    e_d_v_dat = [[(offset, dim) for (i_e, (offset, dim)) in enumerate(zip(e_offs, e_dims)) if i_v == d_e[i_e]] for i_v in 1:num_v]
 
     GraphStruct(
     num_v,
@@ -181,7 +181,7 @@ mutable struct GraphData{T}
         gd.v_s_e = [VertexData{GraphData{T}}(gd, offset, dim) for (offset,dim) in zip(gs.s_e_offs, gs.v_dims[gs.s_e])]
         gd.v_d_e = [VertexData{GraphData{T}}(gd, offset, dim) for (offset,dim) in zip(gs.d_e_offs, gs.v_dims[gs.d_e])]
         gd.e_s_v = [[EdgeData{GraphData{T}}(gd, offset, dim) for (offset,dim) in e_s_v] for e_s_v in gs.e_s_v_dat]
-        gd.e_d_v = [[EdgeData{GraphData{T}}(gd, offset, dim) for (offset,dim) in e_s_v] for e_s_v in gs.e_s_v_dat]
+        gd.e_d_v = [[EdgeData{GraphData{T}}(gd, offset, dim) for (offset,dim) in e_d_v] for e_d_v in gs.e_d_v_dat]
         gd
     end
 end
@@ -215,6 +215,7 @@ end
 end
 
 function (d::nd_ODE_Static_2{G,T})(dx::T, x::T, p, t) where G where T
+    # print("Type stable version")
     gd = d.graph_data
     gd.v_array = x
 
@@ -233,6 +234,8 @@ function (d::nd_ODE_Static_2{G,T})(dx::T, x::T, p, t) where G where T
 end
 
 function (d::nd_ODE_Static_2)(dx, x, p, t)
+    # print("Type unstable version")
+
     e_array = similar(x, d.graph_structure.num_e)
     gd = GraphData(x, e_array, d.graph_structure)
 
@@ -245,7 +248,7 @@ function (d::nd_ODE_Static_2)(dx, x, p, t)
 
     for i in 1:d.graph_structure.num_v
         # d.vertices![i].f!(dgd.v[i], gd.v[i], gd.e_s_v[i], gd.e_d_v[i], p[i], t)
-        d.vertices![i].f!(dx[d.graph_structure.v_idx[i]], gd.v[i], gd.e_s_v[i], gd.e_d_v[i], p[i], t)
+        d.vertices![i].f!(view(dx,d.graph_structure.v_idx[i]), gd.v[i], gd.e_s_v[i], gd.e_d_v[i], p[i], t)
     end
 
     nothing

@@ -70,10 +70,34 @@ x0 = rand(nv(g))
 dx_L = similar(x0)
 dx_st = similar(x0)
 dx_st2 = similar(x0)
+dx_st3 = similar(x0)
+
+x1 = zeros(Float32, 100)
+x1 .= x0
+#
+# kur_network_st.f.graph_stucture.e_int[1]
+# kur_network_st.f.graph_stucture.e_s[1][1][1]
+# kur_network_st.f.graph_stucture.d_idx[60]
+# kur_network_st2.f.graph_data.e[1][1]
+# kur_network_st2.f.graph_data.e_array[1]
+# kur_network_st2.f.graph_data.e_s_v[1][1][1]
+# kur_network_st2.f.graph_structure.d_e_idx[60]
+#
+# length(kur_network_st.f.graph_stucture.e_s)
+# length(kur_network_st2.f.graph_data.e_s_v)
+#
+# kur_network_st2.f.graph_data.e[1][1]
+# kur_network_st2.f.graph_structure.v_idx[1]
 
 kur_network_st(dx_st, x0, p, 0.)
-kur_network_st2(dx_st2, x0, p, 0.)
 kur_network_L(dx_L, x0, nothing, 0.)
+isapprox(dx_st, dx_L)
+
+kur_network_st2(dx_st2, x0, p, 0.) # This calls the type stable method
+kur_network_st2(dx_st3, x1, p, 0.) # This calls the non-type stable method
+
+dx_st - dx_st2 .|> abs |> maximum
+dx_st - dx_st3 .|> abs |> maximum
 
 println("Benchmarking")
 
