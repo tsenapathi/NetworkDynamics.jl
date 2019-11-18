@@ -42,7 +42,7 @@ function create_offsets(dims; counter=0)::Array{Int, 1}
 end
 
 function create_idxs(offs, dims)::Array{Idx, 1}
-    idxs = [1+off:1+off+dim for (off, dim) in zip(offs, dims)]
+    idxs = [1+off:off+dim for (off, dim) in zip(offs, dims)]
 end
 
 
@@ -130,7 +130,8 @@ end
 end
 
 @inline function setindex!(e_dat::EdgeData, x, idx)
-    e_dat.gd.e_array[idx + e_dat.idx_offset]
+    e_dat.gd.e_array[idx + e_dat.idx_offset] = x
+    nothing
 end
 
 @inline function length(e_dat::EdgeData)
@@ -150,7 +151,8 @@ end
 end
 
 @inline function setindex!(v_dat::VertexData, x, idx)
-    v_dat.gd.v_array[idx + v_dat.idx_offset]
+    v_dat.gd.v_array[idx + v_dat.idx_offset] = x
+    nothing
 end
 
 @inline function length(v_dat::VertexData)
@@ -230,30 +232,22 @@ function (d::nd_ODE_Static_2{G,T})(dx::T, x::T, p, t) where G where T
     nothing
 end
 
-
-@Base.kwdef struct nd_ODE_Static_2{G,T}
-    vertices!::Array{ODEVertex, 1}
-    edges!::Array{StaticEdge, 1}
-    graph::G
-    graph_structure::GraphStruct
-    graph_data::GraphData{T}
-    dgraph_data::GraphData{T}
-end
-
 function (d::nd_ODE_Static_2)(dx, x, p, t)
     e_array = similar(x, d.graph_structure.num_e)
     gd = GraphData(x, e_array, d.graph_structure)
 
-    dgd = GraphData(dx, e_array, d.graph_structure)
+    # de_array = similar(dx, d.graph_structure.num_e)
+    # dgd = GraphData(dx, de_array, d.graph_structure)
 
-    @views begin
     for i in 1:d.graph_structure.num_e
         d.edges![i].f!(gd.e[i], gd.v_s_e[i], gd.v_d_e[i], p[i+d.graph_structure.num_v], t)
     end
+
     for i in 1:d.graph_structure.num_v
-        d.vertices![i].f!(dgd.v[i], gd.v[i], gd.e_s_v[i], gd.e_d_v[i], p[i], t)
+        # d.vertices![i].f!(dgd.v[i], gd.v[i], gd.e_s_v[i], gd.e_d_v[i], p[i], t)
+        d.vertices![i].f!(dx[d.graph_structure.v_idx[i]], gd.v[i], gd.e_s_v[i], gd.e_d_v[i], p[i], t)
     end
-    end # views
+
     nothing
 end
 

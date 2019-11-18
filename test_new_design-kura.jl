@@ -9,7 +9,7 @@ using BenchmarkTools
 const ND = NetworkDynamics
 
 include("/home/hellmann/git/NetworkDynamics/dev_new_design.jl")
-g = barabasi_albert(10^2,5)
+g = barabasi_albert(10^2,50)
 
 # First we construct the dynamical equations using sparse matrix multiplications
 # We can not expect to reach this level of performance, nor do we need to.
@@ -80,3 +80,14 @@ println("Benchmarking")
 @btime kur_network_st(dx_st, x0, p, 0.)
 @btime kur_network_st2(dx_st2, x0, p, 0.)
 @btime kur_network_L(dx_L, x0, nothing, 0.)
+
+prob_st = ODEProblem(kur_network_st,x0,(0.,5.),p)
+prob_st2 = ODEProblem(kur_network_st2,x0,(0.,5.),p)
+prob_L = ODEProblem(kur_network_L,x0,(0.,5.))
+
+println("Benchmarking Solves")
+@btime solve(prob_st, Rodas4(autodiff=false))
+@btime solve(prob_st, Rodas4())
+@btime solve(prob_st2, Rodas4(autodiff=false))
+@btime solve(prob_st2, Rodas4())
+@btime solve(prob_L, Rodas4())
