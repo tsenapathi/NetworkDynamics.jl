@@ -1,4 +1,6 @@
 using LightGraphs
+using DiffEqOperators
+using DiffEqBase
 
 # New design, this is a self contained file defining everything for the new
 # design of ND.jl
@@ -255,7 +257,7 @@ function (d::nd_ODE_Static_2)(dx, x, p, t)
 end
 
 
-function network_dynamics_2(vertices!::Array{ODEVertex,1}, edges!::Array{StaticEdge,1}, graph, x_prototype=zeros(1))
+function network_dynamics_2(vertices!::Array{ODEVertex,1}, edges!::Array{StaticEdge,1}, graph, p; x_prototype=zeros(1))
     @assert length(vertices!) == length(vertices(graph))
     @assert length(edges!) == length(edges(graph))
 
@@ -272,10 +274,42 @@ function network_dynamics_2(vertices!::Array{ODEVertex,1}, edges!::Array{StaticE
 
     nd! = nd_ODE_Static_2(vertices!, edges!, graph, graph_stucture, graph_data, dgraph_data)
 
+    Jv = JacVecOperator(nd!, v_array, p, 0.0)
+
     # Construct mass matrix
     mass_matrix = construct_mass_matrix([v.mass_matrix for v in vertices!], sum(v_dims), graph_stucture)
 
     symbols = [Symbol(vertices![i].sym[j],"_",i) for i in 1:length(vertices!) for j in 1:v_dims[i]]
 
-    ODEFunction(nd!,mass_matrix = mass_matrix,syms=symbols)
+    ODEFunction(nd!; jac_prototype=Jv, mass_matrix = mass_matrix, syms=symbols)
+end
+
+
+struct SolutionWrapper
+    sol
+    graph_data
+end
+function (sw::SolutionWrapper)(t)
+    sw.graph_data.v_array = sw.sol(t)
+    sw.graph_data
+end
+function (sw::SolutionWrapper)(s::Symbol, t)
+    sw.graph_data.v_array = sw.sol(t)
+    if   s == :v
+        return sw.graph_data.v
+    elseif s == :e
+        return sw.graph_data.e
+    else
+        return nothing
+    end
+end
+function (sw::SolutionWrapper)(s::Symbol, i, t)
+    sw.graph_data.v_array = sw.sol(t)
+    if   s == :v
+        return sw.graph_data.v[i]
+    elseif s == :e
+        return sw.graph_data.e[i]
+    else
+        return nothing
+    end
 end

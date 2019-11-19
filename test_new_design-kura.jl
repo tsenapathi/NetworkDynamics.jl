@@ -9,7 +9,7 @@ using BenchmarkTools
 const ND = NetworkDynamics
 
 include("/home/hellmann/git/NetworkDynamics/dev_new_design.jl")
-g = barabasi_albert(10^2,50)
+g = barabasi_albert(10^3,5)
 
 # First we construct the dynamical equations using sparse matrix multiplications
 # We can not expect to reach this level of performance, nor do we need to.
@@ -62,9 +62,9 @@ staticedge = StaticEdge(f! = kuramoto_edge!, dim = 1)
 vertex_list = [odevertex for v in vertices(g)]
 edge_list = [staticedge for e in edges(g)]
 
-kur_network_st2 = network_dynamics_2(vertex_list,edge_list,g)
-
 p = vcat(ω, zeros(ne(g)))
+
+kur_network_st2 = network_dynamics_2(vertex_list, edge_list, g, p; x_prototype=zeros(nv(g)))
 
 x0 = rand(nv(g))
 dx_L = similar(x0)
@@ -72,22 +72,8 @@ dx_st = similar(x0)
 dx_st2 = similar(x0)
 dx_st3 = similar(x0)
 
-x1 = zeros(Float32, 100)
+x1 = zeros(Float32, nv(g))
 x1 .= x0
-#
-# kur_network_st.f.graph_stucture.e_int[1]
-# kur_network_st.f.graph_stucture.e_s[1][1][1]
-# kur_network_st.f.graph_stucture.d_idx[60]
-# kur_network_st2.f.graph_data.e[1][1]
-# kur_network_st2.f.graph_data.e_array[1]
-# kur_network_st2.f.graph_data.e_s_v[1][1][1]
-# kur_network_st2.f.graph_structure.d_e_idx[60]
-#
-# length(kur_network_st.f.graph_stucture.e_s)
-# length(kur_network_st2.f.graph_data.e_s_v)
-#
-# kur_network_st2.f.graph_data.e[1][1]
-# kur_network_st2.f.graph_structure.v_idx[1]
 
 kur_network_st(dx_st, x0, p, 0.)
 kur_network_L(dx_L, x0, nothing, 0.)
@@ -110,8 +96,28 @@ prob_st2 = ODEProblem(kur_network_st2,x0,(0.,5.),p)
 prob_L = ODEProblem(kur_network_L,x0,(0.,5.))
 
 println("Benchmarking Solves")
-@btime solve(prob_st, Rodas4(autodiff=false))
-@btime solve(prob_st, Rodas4())
-@btime solve(prob_st2, Rodas4(autodiff=false))
-@btime solve(prob_st2, Rodas4())
-@btime solve(prob_L, Rodas4())
+# @time solve(prob_st, Rodas4(autodiff=false))
+@time sol=solve(prob_st2, TRBDF2(linsolve=LinSolveGMRES()))
+@time sol=solve(prob_L, TRBDF2(linsolve=LinSolveGMRES()))
+@time solve(prob_st, Rodas4())
+
+# @time solve(prob_st2, Rodas4(autodiff=false))
+@time solve(prob_st2, Rodas4())
+@time solve(prob_L, Rodas4())
+
+using Sundials
+
+@time solve(prob_st, CVODE_BDF())
+@time solve(prob_st2, CVODE_BDF())
+@time solve(prob_L, CVODE_BDF())
+
+# Paul suggested to use GraphData objects to access the solution object more
+# elegantly:
+
+sw = SolutionWrapper(sol, kur_network_st2.f.graph_data)
+
+b = t -> [v[1] for v in sw(:v, t)]
+sw(:v, 4.)[1]
+sw(:v, 1, 4.)[1]
+
+b(4.)
