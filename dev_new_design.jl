@@ -1,20 +1,24 @@
+module ND1
+
 using LightGraphs
 using DiffEqOperators
 using DiffEqBase
+using LinearAlgebra
 
 # New design, this is a self contained file defining everything for the new
 # design of ND.jl
 
-@Base.kwdef struct StaticEdge
-    f! # (e, v_s, v_t, p, t) -> nothing
-    dim # number of dimensions of x
+# Question: Make use of FunctionWrapper??
+@Base.kwdef struct StaticEdge{T}
+    f!::T # (e, v_s, v_t, p, t) -> nothing
+    dim::Int # number of dimensions of x
     sym=[:e for i in 1:dim] # Symbols for the dimensions
 end
 
 
-@Base.kwdef struct ODEVertex
-    f! # The function with signature (dx, x, e_s, e_t, p, t) -> nothing
-    dim # number of dimensions of x
+@Base.kwdef struct ODEVertex{T}
+    f!::T # The function with signature (dx, x, e_s, e_t, p, t) -> nothing
+    dim::Int # number of dimensions of x
     mass_matrix=I # Mass matrix for the equation
     sym=[:v for i in 1:dim] # Symbols for the dimensions
 end
@@ -207,29 +211,25 @@ function construct_mass_matrix(mmv_array, dim_nd, gs::GraphStruct)
 end
 
 
-@Base.kwdef struct nd_ODE_Static_2{G,T}
-    vertices!::Array{ODEVertex, 1}
-    edges!::Array{StaticEdge, 1}
+@Base.kwdef struct nd_ODE_Static_2{G, T, T1, T2}
+    vertices!::T1
+    edges!::T2
     graph::G
     graph_structure::GraphStruct
     graph_data::GraphData{T}
-    dgraph_data::GraphData{T}
 end
 
-function (d::nd_ODE_Static_2{G,T})(dx::T, x::T, p, t) where G where T
+function (d::nd_ODE_Static_2{G, T, T1, T2})(dx::T, x::T, p, t) where G where T where T1 where T2
     # print("Type stable version")
     gd = d.graph_data
     gd.v_array = x
-
-    dgd = d.dgraph_data
-    dgd.v_array = dx
 
     for i in 1:d.graph_structure.num_e
         d.edges![i].f!(gd.e[i], gd.v_s_e[i], gd.v_d_e[i], p[i+d.graph_structure.num_v], t)
     end
 
     for i in 1:d.graph_structure.num_v
-        d.vertices![i].f!(dgd.v[i], gd.v[i], gd.e_s_v[i], gd.e_d_v[i], p[i], t)
+        d.vertices![i].f!(view(dx,d.graph_structure.v_idx[i]), gd.v[i], gd.e_s_v[i], gd.e_d_v[i], p[i], t)
     end
 
     nothing
@@ -241,15 +241,11 @@ function (d::nd_ODE_Static_2)(dx, x, p, t)
     e_array = similar(x, d.graph_structure.num_e)
     gd = GraphData(x, e_array, d.graph_structure)
 
-    # de_array = similar(dx, d.graph_structure.num_e)
-    # dgd = GraphData(dx, de_array, d.graph_structure)
-
     for i in 1:d.graph_structure.num_e
         d.edges![i].f!(gd.e[i], gd.v_s_e[i], gd.v_d_e[i], p[i+d.graph_structure.num_v], t)
     end
 
     for i in 1:d.graph_structure.num_v
-        # d.vertices![i].f!(dgd.v[i], gd.v[i], gd.e_s_v[i], gd.e_d_v[i], p[i], t)
         d.vertices![i].f!(view(dx,d.graph_structure.v_idx[i]), gd.v[i], gd.e_s_v[i], gd.e_d_v[i], p[i], t)
     end
 
@@ -257,7 +253,84 @@ function (d::nd_ODE_Static_2)(dx, x, p, t)
 end
 
 
-function network_dynamics_2(vertices!::Array{ODEVertex,1}, edges!::Array{StaticEdge,1}, graph, p; x_prototype=zeros(1))
+
+@Base.kwdef struct nd_ODE_ODE_2{G, T, T1, T2}
+    vertices!::T1
+    edges!::T2
+    graph::G
+    graph_structure::GraphStruct
+    graph_data::GraphData{T}
+end
+
+function (d::nd_ODE_ODE_2{G, T, T1, T2})(dx::T, x::T, p, t) where G where T where T1 where T2
+    # print("Type stable version")
+    gd = d.graph_data
+    gd.v_array = view(x, 1:d.graph_structure.num_v)
+    gd.e_array = view(x, d.graph_structure.num_v+1:d.graph_structure.num_v+d.graph_structure.num_e)
+
+    for i in 1:d.graph_structure.num_e
+        d.edges![i].f!(view(dx,d.graph_structure.e_idx[i]), gd.e[i], gd.v_s_e[i], gd.v_d_e[i], p[i+d.graph_structure.num_v], t)
+    end
+
+    for i in 1:d.graph_structure.num_v
+        d.vertices![i].f!(view(dx,d.graph_structure.v_idx[i]), gd.v[i], gd.e_s_v[i], gd.e_d_v[i], p[i], t)
+    end
+
+    nothing
+end
+
+function (d::nd_ODE_ODE_2)(dx, x, p, t)
+    # print("Type unstable version")
+    v_array = view(x, 1:d.graph_structure.num_v)
+    e_array = view(x, d.graph_structure.num_v+1:d.graph_structure.num_v+d.graph_structure.num_e)
+
+    gd = GraphData(v_array, e_array, d.graph_structure)
+
+    for i in 1:d.graph_structure.num_e
+        d.edges![i].f!(view(dx,d.graph_structure.e_idx[i]), gd.e[i], gd.v_s_e[i], gd.v_d_e[i], p[i+d.graph_structure.num_v], t)
+    end
+
+    for i in 1:d.graph_structure.num_v
+        d.vertices![i].f!(view(dx,d.graph_structure.v_idx[i]), gd.v[i], gd.e_s_v[i], gd.e_d_v[i], p[i], t)
+    end
+
+    nothing
+end
+
+
+# Restore dispatch for network dynamics
+
+function network_dynamics_2(vertices!::Array{T, 1}, edges!::Array{U, 1}, graph, p; x_prototype=zeros(1)) where T <: ODEVertex where U <: ODEEdge
+    @assert length(vertices!) == length(vertices(graph))
+    @assert length(edges!) == length(edges(graph))
+
+    v_dims = [v.dim for v in vertices!]
+    e_dims = [e.dim for e in edges!]
+
+    x_array = similar(x_prototype, sum(v_dims) + sum(e_dims))
+
+    v_array = view(x_prototype, 1:sum(v_dims))
+    e_array = view(x_prototype, sum(v_dims)+1:sum(v_dims)+sum(e_dims))
+
+    graph_stucture = GraphStruct(graph, v_dims, e_dims)
+
+    graph_data = GraphData{typeof(v_array)}(v_array, e_array, graph_stucture)
+
+    nd! = nd_ODE_ODE_2(vertices!, edges!, graph, graph_stucture, graph_data)
+
+    Jv = JacVecOperator(nd!, v_array, p, 0.0)
+
+    # Construct mass matrix
+    correct this mass_matrix = construct_mass_matrix([v.mass_matrix for v in vertices!], sum(v_dims), graph_stucture)
+
+    correct this  symbols = [Symbol(vertices![i].sym[j],"_",i) for i in 1:length(vertices!) for j in 1:v_dims[i]]
+
+
+    ODEFunction(nd!; jac_prototype=Jv, mass_matrix = mass_matrix, syms=symbols)
+end
+
+
+function network_dynamics_2(vertices!::Array{T, 1}, edges!::Array{U, 1}, graph, p; x_prototype=zeros(1)) where T <: ODEVertex where U <: StaticEdge
     @assert length(vertices!) == length(vertices(graph))
     @assert length(edges!) == length(edges(graph))
 
@@ -270,9 +343,8 @@ function network_dynamics_2(vertices!::Array{ODEVertex,1}, edges!::Array{StaticE
     graph_stucture = GraphStruct(graph, v_dims, e_dims)
 
     graph_data = GraphData{typeof(v_array)}(v_array, e_array, graph_stucture)
-    dgraph_data = GraphData{typeof(v_array)}(v_array, e_array, graph_stucture)
 
-    nd! = nd_ODE_Static_2(vertices!, edges!, graph, graph_stucture, graph_data, dgraph_data)
+    nd! = nd_ODE_Static_2(vertices!, edges!, graph, graph_stucture, graph_data)
 
     Jv = JacVecOperator(nd!, v_array, p, 0.0)
 
@@ -280,6 +352,7 @@ function network_dynamics_2(vertices!::Array{ODEVertex,1}, edges!::Array{StaticE
     mass_matrix = construct_mass_matrix([v.mass_matrix for v in vertices!], sum(v_dims), graph_stucture)
 
     symbols = [Symbol(vertices![i].sym[j],"_",i) for i in 1:length(vertices!) for j in 1:v_dims[i]]
+
 
     ODEFunction(nd!; jac_prototype=Jv, mass_matrix = mass_matrix, syms=symbols)
 end
@@ -313,3 +386,5 @@ function (sw::SolutionWrapper)(s::Symbol, i, t)
         return nothing
     end
 end
+
+end # module ND1
