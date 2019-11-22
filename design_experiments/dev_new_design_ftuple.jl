@@ -1,27 +1,35 @@
-module NetworkStructures
+
+# New design, this is a self contained file defining everything for the new
+# design of ND.jl
+
+module ND2
 
 using LightGraphs
+using DiffEqOperators
+using DiffEqBase
 using LinearAlgebra
-using SparseArrays
-#= This module contains the logic that calculate the index structures
-and data access structs that Network Dynamics makes use of.
 
-The key structure is the GraphData structure that allows accessing data on
-vertices and edges of the graph in an efficient manner. The neccessary indices
-are precomputed in GraphStructure.
-=#
+
+@Base.kwdef struct StaticEdge{T}
+    f!::T # (e, v_s, v_t, p, t) -> nothing
+    dim::Int # number of dimensions of x
+    sym=[:e for i in 1:dim] # Symbols for the dimensions
+end
+
+
+@Base.kwdef struct ODEVertex{T}
+    f!::T # The function with signature (dx, x, e_s, e_t, p, t) -> nothing
+    dim::Int # number of dimensions of x
+    mass_matrix=I # Mass matrix for the equation
+    sym=[:v for i in 1:dim] # Symbols for the dimensions
+end
 
 # We need rather complicated sets of indices into the arrays that hold the
 # vertex and the edge variables. We precompute everything we can and store it
 # in GraphStruct.
 
-export create_idxs, create_offsets, GraphStruct, GraphData, EdgeData, VertexData, construct_mass_matrix
-
 const Idx = UnitRange{Int}
 
-"""
-Create indices for stacked array of dimensions dims
-"""
 function create_idxs(dims; counter=1)::Array{Idx, 1}
     idxs = [1:1 for dim in dims]
     for (i, dim) in enumerate(dims)
@@ -31,9 +39,6 @@ function create_idxs(dims; counter=1)::Array{Idx, 1}
     idxs
 end
 
-"""
-Create offsets for stacked array of dimensions dims
-"""
 function create_offsets(dims; counter=0)::Array{Int, 1}
     offs = [1 for dim in dims]
     for (i, dim) in enumerate(dims)
@@ -43,22 +48,11 @@ function create_offsets(dims; counter=0)::Array{Int, 1}
     offs
 end
 
-"""
-Create indexes for stacked array of dimensions dims using the offsets offs
-"""
 function create_idxs(offs, dims)::Array{Idx, 1}
     idxs = [1+off:off+dim for (off, dim) in zip(offs, dims)]
 end
 
-"""
-This struct holds the offsets and indices for all relevant aspects of the graph
-The assumption is that there will be two arrays, one for the vertex variables
-and one for the edge variables.
 
-The graph structure is encoded in the source and destination relationships s_e
-and d_e. THese are arrays that hold the node that is the source/destination of
-the indexed edge. Thus ``e_i = (s_e[i], d_e[i])``
-"""
 struct GraphStruct
     num_v::Int
     num_e::Int
@@ -123,6 +117,14 @@ end
 
 import Base.getindex, Base.setindex!, Base.length
 
+struct ConstArray{T}
+    ca_val::T
+end
+
+@inline function getindex(ca::ConstArray, idx)
+    ca.ca_val
+end
+
 
 struct EdgeData{G}
     gd::G
@@ -130,11 +132,11 @@ struct EdgeData{G}
     len::Int
 end
 
-@inline Base.@propagate_inbounds function getindex(e_dat::EdgeData, idx)
+@inline function getindex(e_dat::EdgeData, idx)
     e_dat.gd.e_array[idx + e_dat.idx_offset]
 end
 
-@inline Base.@propagate_inbounds function setindex!(e_dat::EdgeData, x, idx)
+@inline function setindex!(e_dat::EdgeData, x, idx)
     e_dat.gd.e_array[idx + e_dat.idx_offset] = x
     nothing
 end
@@ -151,11 +153,11 @@ struct VertexData{G}
     len::Int
 end
 
-@inline Base.@propagate_inbounds function getindex(v_dat::VertexData, idx)
+@inline function getindex(v_dat::VertexData, idx)
     v_dat.gd.v_array[idx + v_dat.idx_offset]
 end
 
-@inline Base.@propagate_inbounds function setindex!(v_dat::VertexData, x, idx)
+@inline function setindex!(v_dat::VertexData, x, idx)
     v_dat.gd.v_array[idx + v_dat.idx_offset] = x
     nothing
 end
@@ -195,10 +197,7 @@ function GraphData(v_array, e_array, gs)
     GraphData{typeof(v_array)}(v_array, e_array, gs)
 end
 
-
-
-
-function construct_mass_matrix(mmv_array, dim_nd, gs)
+function construct_mass_matrix(mmv_array, dim_nd, gs::GraphStruct)
     if all([mm == I for mm in mmv_array])
         mass_matrix = I
     else
@@ -212,24 +211,130 @@ function construct_mass_matrix(mmv_array, dim_nd, gs)
     mass_matrix
 end
 
-function construct_mass_matrix(mmv_array, mme_array, dim_v, dim_e, gs)
-    if all([mm == I for mm in mmv_array]) && all([mm == I for mm in mme_array])
-        mass_matrix = I
-    else
-        dim_nd = dim_v + dim_e
-        mass_matrix = sparse(1.0I,dim_nd,dim_nd)
-        for (i, mm) in enumerate(mmv_array)
-            if mm != I
-                mass_matrix[gs.v_idx[i],gs.v_idx[i]] .= mm
-            end
-        end
-        for (i, mm) in enumerate(mme_array)
-            if mm != I
-                mass_matrix[gs.e_idx[i] + dim_v, gs.e_idx[i] + dim_v] .= mm
-            end
-        end
-    end
-    mass_matrix
+
+@Base.kwdef struct nd_ODE_Static_2{G,T,TF1,TF2}
+    tup_vertices!::TF1
+    v_type_idx::Array{Array{Int, 1}, 1}
+    tup_edges!::TF2
+    e_type_idx::Array{Array{Int, 1}, 1}
+    graph::G
+    graph_structure::GraphStruct
+    graph_data::GraphData{T}
+    dgraph_data::GraphData{T}
 end
 
-end # module
+function (d::nd_ODE_Static_2{G,T,TF1,TF2})(dx::T, x::T, p, t) where G where T where TF1 where TF2
+    # print("Type stable version")
+    gd = d.graph_data
+    gd.v_array = x
+
+    dgd = d.dgraph_data
+    dgd.v_array = dx
+
+    for (i_e, edges!) in enumerate(d.tup_edges!)
+    for (idx_e, edge) in enumerate(edges!) # This is a typestable loop with the same f! type throughout
+        i = d.e_type_idx[i_e][idx_e]
+        edge.f!(gd.e[i], gd.v_s_e[i], gd.v_d_e[i], p[i+d.graph_structure.num_v], t)
+    end
+    end
+
+    for (i_v, vertices!) in enumerate(d.tup_vertices!)
+    for (idx_v, vertex) in enumerate(vertices!)
+        i = d.v_type_idx[i_v][idx_v]
+        vertex.f!(dgd.v[i], gd.v[i], gd.e_s_v[i], gd.e_d_v[i], p[i], t)
+    end
+    end
+
+    nothing
+end
+
+function (d::nd_ODE_Static_2)(dx, x, p, t)
+    # print("Type unstable version")
+
+    e_array = similar(x, d.graph_structure.num_e)
+    gd = GraphData(x, e_array, d.graph_structure)
+
+    # de_array = similar(dx, d.graph_structure.num_e)
+    # dgd = GraphData(dx, de_array, d.graph_structure)
+
+    for i in 1:d.graph_structure.num_e
+        d.edges![i].f!(gd.e[i], gd.v_s_e[i], gd.v_d_e[i], p[i+d.graph_structure.num_v], t)
+    end
+
+    for i in 1:d.graph_structure.num_v
+        # d.vertices![i].f!(dgd.v[i], gd.v[i], gd.e_s_v[i], gd.e_d_v[i], p[i], t)
+        d.vertices![i].f!(view(dx,d.graph_structure.v_idx[i]), gd.v[i], gd.e_s_v[i], gd.e_d_v[i], p[i], t)
+    end
+
+    nothing
+end
+
+
+function network_dynamics_2(vertices!, edges!, graph, p; x_prototype=zeros(1))
+    @assert length(vertices!) == length(vertices(graph))
+    @assert length(edges!) == length(edges(graph))
+
+    v_dims = [v.dim for v in vertices!]
+    e_dims = [e.dim for e in edges!]
+
+    v_array = similar(x_prototype, sum(v_dims))
+    e_array = similar(x_prototype, sum(e_dims))
+
+    v_type_array = vertices! .|> typeof
+    tup_v_types = Tuple(v_type_array |> unique)
+    v_type_idx = [[i for (i, T) in enumerate(v_type_array) if T == Tv] for Tv in tup_v_types]
+    v_tup = Tuple([[vertices![i] for i in v_type_i] for v_type_i in v_type_idx])
+
+    e_type_array = edges! .|> typeof
+    tup_e_types = Tuple(e_type_array |> unique)
+    e_type_idx = [[i for (i, T) in enumerate(e_type_array) if T == Te] for Te in tup_e_types]
+    e_tup = Tuple([[edges![i] for i in e_type_i] for e_type_i in e_type_idx])
+
+    graph_stucture = GraphStruct(graph, v_dims, e_dims)
+
+    graph_data = GraphData{typeof(v_array)}(v_array, e_array, graph_stucture)
+    dgraph_data = GraphData{typeof(v_array)}(v_array, e_array, graph_stucture)
+
+    nd! = nd_ODE_Static_2(v_tup, v_type_idx, e_tup, e_type_idx, graph, graph_stucture, graph_data, dgraph_data)
+
+    Jv = JacVecOperator(nd!, v_array, p, 0.0)
+
+    # Construct mass matrix
+    mass_matrix = construct_mass_matrix([v.mass_matrix for v in vertices!], sum(v_dims), graph_stucture)
+
+    symbols = [Symbol(vertices![i].sym[j],"_",i) for i in 1:length(vertices!) for j in 1:v_dims[i]]
+
+    ODEFunction(nd!; jac_prototype=Jv, mass_matrix = mass_matrix, syms=symbols)
+end
+
+
+struct SolutionWrapper
+    sol
+    graph_data
+end
+function (sw::SolutionWrapper)(t)
+    sw.graph_data.v_array = sw.sol(t)
+    sw.graph_data
+end
+function (sw::SolutionWrapper)(s::Symbol, t)
+    sw.graph_data.v_array = sw.sol(t)
+    if   s == :v
+        return sw.graph_data.v
+    elseif s == :e
+        return sw.graph_data.e
+    else
+        return nothing
+    end
+end
+function (sw::SolutionWrapper)(s::Symbol, i, t)
+    sw.graph_data.v_array = sw.sol(t)
+    if   s == :v
+        return sw.graph_data.v[i]
+    elseif s == :e
+        return sw.graph_data.e[i]
+    else
+        return nothing
+    end
+end
+
+end
