@@ -78,6 +78,6 @@ dl_prob = ODEProblem(dl,x0,t)
 sol= solve(dl_prob)
 plot(sol, legend = false, vars = 1:20)
 ```
-(Bild)
+![](figures/sdlfig.png)
 
 We get the same pattern as for the scalar case, just twice.

@@ -2,7 +2,7 @@
 
 The Dynamics for the whole Network is constructed from functions for the single vertices and edges. There are several types:
 
-```@docs
+```julia
 ODEVertex(vertexfunction!, dimension, mass_matrix, sym)
 StaticEdge(edgefunction!, dimension)
 ODEEdge(edgefunction!, dimension, mass_matrix, sym)
@@ -31,13 +31,13 @@ The e_s and e_d are arrays containing the edges that have the decribed vertex as
 
 **mass_matrix** is the mass matrix M, i.e.
 
-```@docs
+```julia
 M*dv = vertexfunction!
 ```
 
 sym are the symbols of the Vertex. If one had for example a vertex with a frequency and some angle, one would construct sym via:
 
-```@docs
+```julia
 sym = [:omega, :phi]
 ```
 
@@ -45,7 +45,7 @@ This makes it easier to later fish out the interesting variables one wants to lo
 
 One may also call ODEVertex via:
 
-```@docs
+```julia
 ODEVertex(vertexfunction!, dimension)
 ```
 
@@ -80,7 +80,7 @@ edgefunction! = (de, e, v_s, v_d, p, t) -> de .= 1000 * (v_s .- v_d .- e)
 
 Also, one can construct an ODEEdge by only giving the first two arguments:
 
-```@docs
+```julia
 ODEEdge(edgefunction!, dimension)
 ```
 
@@ -93,7 +93,7 @@ Then the function defaults to using the identity as mass matrix as well as using
 
 The central constructor of this package is network_dynamics(), this function demands an array of VertexFunction and EdgeFunction as well as a graph (see LightGraphs), and returns an ODEFunction which one can easily solve via the tools given in DifferentialEquations.jl. One calls it via:
 
-```@docs
+```julia
 network_dynamics(Array{VertexFunction}, Array{EdgeFunction}, graph)
 ```
 

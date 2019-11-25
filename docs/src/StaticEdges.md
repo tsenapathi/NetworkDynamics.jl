@@ -66,6 +66,6 @@ sol = solve(ssl_prob)
 plot(sol, legend = false)
 ```
 
-![](sslfig.pdf)
+![](figures/sslfig.png)
 
 As one would expect in a diffusive network, the values on the vertices converge.
