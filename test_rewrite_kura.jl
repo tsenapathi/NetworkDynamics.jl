@@ -1,11 +1,12 @@
+Pkg.activate(".")
 using NetworkDynamics
 using LightGraphs
 using OrdinaryDiffEq
 using DiffEqOperators
 using BenchmarkTools
 
-N = 10
-g = barabasi_albert(N,5)
+N = 100
+g = random_regular_graph(N,3)
 
 B = incidence_matrix(g, oriented=true)
 
@@ -42,7 +43,7 @@ end
 # @inline Base.@propagate_inbounds
 
 @inline Base.@propagate_inbounds function kuramoto_vertex!(dv, v, e_s, e_d, p, t)
-    dv[1] = p - v[1]
+     dv[1] = p - v[1]
     for e in e_s
         dv[1] -= e[1]
     end
@@ -68,7 +69,7 @@ kur_network_eode = network_dynamics(vertex_list,ode_edge_list,g, p)
 
 
 x0 = rand(2N)
-dx_L = similar(x0)
+dx_L = zeros(2N)
 dx_nd = similar(x0)
 
 x_ode = rand(2N+ne(g))
@@ -92,9 +93,31 @@ kur_network_nd(dx_nd, x0, p, 0.)
 kur_network_eode(dx_ode, x_ode, p, 0.)
 kur_network_L(dx_L, x0, nothing, 0.)
 
+kur_network_L.f.ω .- p[1:N]
+
 ω_idx = idx_containing(kur_network_nd, :ω)
 
 dx_nd[ω_idx] .- dx_L[1:N] .|> abs |> maximum
+
+dgd = kur_network_nd(dx_nd, p, 0., GetGD)
+dgd.v[1]
+
+gd = kur_network_nd(x0, p, 0., GetGD)
+
+gd.v[1]
+
+gd.e_s_v[1]
+gd.e_d_v[1]
+
+p[1] - gd.v[1][1] - gd.e_s_v[1][1][1] - gd.e_s_v[2][1][1] - gd.e_s_v[3][1][1]
+
+sin.(kn.B_trans * x0[N+1:2N])
+kn.B[1,:]
+
+dx_L[1]
+
+ω[1]
+x0[N+1]
 
 println("Benchmarking")
 
