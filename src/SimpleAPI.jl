@@ -1,4 +1,4 @@
-export homogeneous_scalar_network_with_sum
+export scalar_network_with_sum
 
 # """
 # Implement dx_i/dt = f(x_i, p, t) + \sum_j A_{ij} h(x_i, x_j, p, t) with scalar x
@@ -9,7 +9,7 @@ This function builds the homogeneous network of the form:
 
 `dx_i/dt = f(x_i, p, t) + \\sum_j A_{ij} h(x_i, x_j, p, t)` with scalar variable `x`
 """
-function homogeneous_scalar_network_with_sum(f, h, graph, p)
+function scalar_network_with_sum(f, h, graph, p)
 
     @inline function hsws_e!(e, x_s, x_t, p, t)
         e[1] = h(x_s[1], x_t[1], p, t)
@@ -25,8 +25,5 @@ function homogeneous_scalar_network_with_sum(f, h, graph, p)
     odevertex = ODEVertex(f! = hsws_v!, dim = 1)
     staticedge = StaticEdge(f! = hsws_e!, dim = 2)
 
-    vertex_list = [odevertex for v in vertices(graph)]
-    edge_list = [staticedge for e in edges(graph)]
-
-    network_dynamics(vertex_list, edge_list, graph, p)
+    network_dynamics(odevertex, staticedge, graph)
 end
