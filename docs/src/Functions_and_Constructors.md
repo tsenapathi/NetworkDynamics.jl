@@ -1,11 +1,12 @@
 # Functions
 
-The Dynamics for the whole Network is constructed from functions for the single vertices and edges. There are several types:
+The dynamics of the whole network are constructed from functions for the single vertices and edges. There are several types:
 
 ```julia
-ODEVertex(vertexfunction!, dimension, mass_matrix, sym)
-StaticEdge(edgefunction!, dimension)
-ODEEdge(edgefunction!, dimension, mass_matrix, sym)
+StaticVertex(f!, dimension, symbol)
+ODEVertex(f!, dimension, mass_matrix, symbol)
+StaticEdge(f!, dimension, symbol)
+ODEEdge(f!, dimension, mass_matrix, symbol)
 ```
 
 
