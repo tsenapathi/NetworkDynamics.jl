@@ -1,56 +1,92 @@
 # Functions
 
-The dynamics of the whole network are constructed from functions for the single vertices and edges. There are several types:
+The key constructor [`network_dynamics`](@ref) assembles the dynamics of the whole network from functions for the single vertices and edges of the graph `g`.
+Since the equations describing the local dynamics may differ strongly from each
+other, the types `VertexFunction` and `EdgeFunction` are introduced. They
+provide a unifying interface between different classes of nodes and edges. Both
+have several subtypes that account for the different types of equations that may
+represent the local dynamics. At the moment algebraic (static) equations and ordinary differential equations (ODEs) are supported:
+
 
 ```julia
+# VertexFunctions
 StaticVertex(f!, dimension, symbol)
 ODEVertex(f!, dimension, mass_matrix, symbol)
+
+# EdgeFunctions
 StaticEdge(f!, dimension, symbol)
 ODEEdge(f!, dimension, mass_matrix, symbol)
 ```
 
 
-### ODEVertex
+# VertexFunctions
 
-The arguments mean the following: **vertexfunction!** is catching the dynamics of a single vertex depending on the vertex value itself as well as in- and outgoing currents (or edges). An example for such a function would be:
+Given a set of (algebraic or differential) equations describing a node or an edge
+the first step is to turn them into a **mutating** function `f!`. Depending on the class of the function `f!`, the constructors `StaticVertex` or `ODEVertex` are called in order to turn `f!` into a `VertexFunction` object compatible with [`network_dynamics`](@ref).
+
+
+Since in general the state of a vertex depends on the vertex value itself as well as on the in- and outgoing edges, the function `f!`
+has to respect on of the following calling syntaxes.
 
 ```julia
-function vertexfunction!(dv, v, e_s, e_d, p, t)
-  dv .= 0
-  for e in e_s
-    dv .-= e
-  end
-  for e in e_d
-    dv .+= e
-  end
+# For static nodes
+function f!(v, e_s, e_d, p, t) end
+# For dynamics nodes
+function f!(dv, v, e_s, e_d, p, t) end
+```
+
+Here `dv`, `v`, `p` and `t` are the usual ODE arguments, while `e_s` and `e_d` are arrays containing the edges for which the described vertex is the source or the destination respectively. The typical case of diffusive coupling on a directed graph could be described as
+
+```julia
+function vertex!(dv, v, e_s, e_d, p, t)
+    dv .= 0.
+    for e in e_s
+        dv .-= e
+    end
+    for e in e_d
+        dv .+= e
+    end
+    nothing
 end
 ```
+!!! warning
+    The arguments `e_s` and `e_d` are **obligatory** even if the graph is undirected and no distinction between source and destination can be made. This is necessary since [LightGraphs.jl](https://github.com/JuliaGraphs/LightGraphs.jl) implements an undirected graph in the same way as a directed graphs, but ignores the directionality information. Therefore some care has
+    to be taken when dealing with assymetric coupling terms. A detailed example
+    can be found [here](missing).
 
-The e_s and e_d are arrays containing the edges that have the decribed vertex as source and destination. Other arguments coincide with the usual ODE function arguments. The vertexfunction given to ODEVertex always needs to have the shown argument structure. Note the importance of the broadcast structure of the equations (the dot before every operator), this is necessary due to the use of views in the internal functions, it further provides a boost to the performance of the solver.
+### [StaticVertex](@ref)
 
-**dimension** is the number of Variables on the Vertex.
-
-**mass_matrix** is the mass matrix M, i.e.
-
-```julia
-M*dv = vertexfunction!
-```
-
-sym are the symbols of the Vertex. If one had for example a vertex with a frequency and some angle, one would construct sym via:
+If a vertex is described by an algebraic equation  `f!(v, e_s, e_d, p, t)`, i.e. `dv = 0` the `VertexFunction` is constructed as
 
 ```julia
-sym = [:omega, :phi]
+StaticVertex(f!, dim, sym)
 ```
 
-This makes it easier to later fish out the interesting variables one wants to look at.
+Here, **dim** is the number of independent variables in the vertex equations and **sym** is an array of symbols of these variables. For example, if a node
+models a constant input ``I = p``, then `dim = 1` and `sym = [:I]`. For more details on the use of symbols, check out the [example](missing) section or the Julia [documentation](https://docs.julialang.org/en/v1/manual/metaprogramming/). The use of symbols makes ODEVit easier to later fish out the interesting variables one wants to look at.
 
-One may also call ODEVertex via:
+
+### [ODEVertex](@ref)
+
+If a vertex has local dynamics `f!(dv, v, e_s, e_d, p, t)` described by an ODE
+the `VertexFunction` is contructed as
 
 ```julia
-ODEVertex(vertexfunction!, dimension)
+ODEVertex(f!, dim, mass_matrix, sym)
 ```
 
-The function then defaults to using the identity as mass matrix and [:v for i in 1:dimension] as symbols.
+As above, **dim** is the number of independent variables in the vertex equations and **sym** corresponds to the symbols of these variables.
+
+**mass_matrix** is an optional argument that defaults to the identity matrix `I`. If a mass matrix M is given the system ``M * dv = f!`` will be solved.
+
+
+One may also call ODEVertex with keyword arguments:
+
+```julia
+ODEVertex(f! = f!, dim = dim)
+```
+
+The function then defaults to using the identity as mass matrix and `[:v for i in 1:dimension]` as symbols.
 
 
 ### StaticEdge
