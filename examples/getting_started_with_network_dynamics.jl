@@ -1,5 +1,5 @@
 # You will find a step-by-step guide to this example in the docs and the
-# corresponding jupyter notebook on our github repository.
+# corresponding jupyter notebook on our github repository
 
 using NetworkDynamics
 using LightGraphs
