@@ -94,6 +94,32 @@ function network_dynamics(vertices!::Union{Array{T, 1}, T}, edges!::Union{Array{
     ODEFunction(nd!; mass_matrix = mass_matrix, syms=symbols)
 end
 
+function network_dynamics(vertices!::Union{Array{T, 1}, T}, edges!::Union{Array{U, 1}, U}, f_graph, g_graph; x_prototype=zeros(1)) where {T <: SDEVertex, U <: StaticEdge}
+    v_dims, e_dims, symbols_v, symbols_e, mmv_array, mme_array = collect_ve_info(vertices!, edges!, graph)
+
+    v_array = similar(x_prototype, sum(v_dims))
+    e_array = similar(x_prototype, sum(e_dims))
+
+    symbols = symbols_v
+
+    f_graph_stucture = GraphStruct(f_graph, v_dims, e_dims, symbols_v, symbols_e)
+    g_graph_stucture = GraphStruct(g_graph, v_dims, e_dims, symbols_v, symbols_e)
+
+    f_graph_data = GraphData(v_array, e_array, f_graph_stucture)
+    g_graph_data = GraphData(v_array, e_array, g_graph_stucture)
+
+    vert = vertices![1]
+    f_vertex = ODEVertex(vert.f!, vert.dim, vert.mass_matrix, vert.sym)
+    g_vertex = ODEVertex(vert.g!, vert.dim, vert.mass_matrix, vert.sym)
+
+    f_nd! = nd_ODE_Static(vertices!, edges!, graph, f_graph_stucture, f_graph_data)
+    g_nd! = nd_ODE_Static(vertices!, edges!, graph, g_graph_stucture, g_graph_data)
+
+    mass_matrix = construct_mass_matrix(mmv_array, graph_stucture)
+
+    SDEFunction(f_nd!, g_nd!; mass_matrix = mass_matrix, syms=symbols)
+end
+
 
 function network_dynamics(vertices!::Union{Array{T, 1}, T}, edges!::Union{Array{U, 1}, U}, graph; x_prototype=zeros(1)) where {T <: ODEVertex, U <: ODEEdge}
     v_dims, e_dims, symbols_v, symbols_e, mmv_array, mme_array = collect_ve_info(vertices!, edges!, graph)

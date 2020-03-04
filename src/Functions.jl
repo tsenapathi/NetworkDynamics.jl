@@ -143,6 +143,17 @@ For more details see the documentation.
     sym=[:e for i in 1:dim] # Symbols for the dimensions
 end
 
+"""
+    SDEVertex(...)
+"""
+@Base.kwdef struct SDEVertex{T,T2}
+    f!::T # The function with signature (dx, x, e_s, e_t, p, t) -> nothing
+    g!::T2 # The function with signature (dx, x, e_s, e_t, p, t) -> nothing
+    dim::Int # number of dimensions of x
+    mass_matrix=I # Mass matrix for the equation
+    sym=[:v for i in 1:dim] # Symbols for the dimensions
+end
+
 
 const VertexFunction = Union{ODEVertex, StaticVertex}
 const EdgeFunction = Union{ODEEdge, StaticEdge}
