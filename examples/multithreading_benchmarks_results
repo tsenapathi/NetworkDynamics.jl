@@ -1,4 +1,4 @@
-# 20 nodes degree 4, without Threads.@threads
+# 20 nodes 64 edges, without Threads.@threads
 
 
 micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=1 julia mutltithreading_benchmarks.jl
@@ -113,7 +113,7 @@ BenchmarkTools.Trial:
 micha@linux-9wj2:~/git/NetworkDynamics.jl/examples>
 
 
-# 20 nodes degree 4, Threads.@threads
+# 20 nodes 64 edges, Threads.@threads
 
 
 
@@ -254,7 +254,7 @@ BenchmarkTools.Trial:
   evals/sample:     1
 
 
-  # 100 nodes degree 20, without Threads.@threads
+  # 100 nodes 1600 edges, without Threads.@threads
 
   micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=1 julia mutltithreading_benchmarks.jl
   using Revise...
@@ -315,7 +315,7 @@ BenchmarkTools.Trial:
 
 
 
-  # 100 nodes degree 20, Threads.@threads
+  # 100 nodes 1600 edges, Threads.@threads
 
 
 
