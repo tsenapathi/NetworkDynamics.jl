@@ -1,403 +1,117 @@
-# 20 nodes 64 edges, without Threads.@threads
+# 100 nodes, average degree 20
 
-
-micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=1 julia mutltithreading_benchmarks.jl
+u@m:NetworkDynamics.jl/benchmarking> env JULIA_NUM_THREADS=1 julia multithreading_benchmarks.jl
 using Revise...
 Number of Threads: 1
+
 Benchmarking ODE_Static...
-BenchmarkTools.Trial:
-  memory estimate:  13.41 KiB
-  allocs estimate:  150
-  --------------
-  minimum time:     94.414 μs (0.00% GC)
-  median time:      95.364 μs (0.00% GC)
-  mean time:        98.243 μs (0.96% GC)
-  maximum time:     3.275 ms (96.91% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-Benchmarking ODE_ODE...
-BenchmarkTools.Trial:
-  memory estimate:  35.63 KiB
-  allocs estimate:  408
-  --------------
-  minimum time:     208.391 μs (0.00% GC)
-  median time:      218.290 μs (0.00% GC)
-  mean time:        226.301 μs (1.20% GC)
-  maximum time:     3.801 ms (93.69% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=2 julia mutltithreading_benchmarks.jl
-using Revise...
-Number of Threads: 2
-Benchmarking ODE_Static...
-BenchmarkTools.Trial:
-  memory estimate:  13.41 KiB
-  allocs estimate:  150
-  --------------
-  minimum time:     88.529 μs (0.00% GC)
-  median time:      93.388 μs (0.00% GC)
-  mean time:        96.308 μs (0.93% GC)
-  maximum time:     3.286 ms (96.35% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-Benchmarking ODE_ODE...
-BenchmarkTools.Trial:
-  memory estimate:  35.63 KiB
-  allocs estimate:  408
-  --------------
-  minimum time:     212.444 μs (0.00% GC)
-  median time:      221.599 μs (0.00% GC)
-  mean time:        223.923 μs (1.10% GC)
-  maximum time:     3.407 ms (92.53% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=4 julia mutltithreading_benchmarks.jl
-using Revise...
-Number of Threads: 4
-Benchmarking ODE_Static...
-BenchmarkTools.Trial:
-  memory estimate:  13.41 KiB
-  allocs estimate:  150
-  --------------
-  minimum time:     92.246 μs (0.00% GC)
-  median time:      93.457 μs (0.00% GC)
-  mean time:        96.324 μs (0.88% GC)
-  maximum time:     3.022 ms (96.02% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-Benchmarking ODE_ODE...
-BenchmarkTools.Trial:
-  memory estimate:  35.63 KiB
-  allocs estimate:  408
-  --------------
-  minimum time:     211.619 μs (0.00% GC)
-  median time:      215.471 μs (0.00% GC)
-  mean time:        223.381 μs (1.09% GC)
-  maximum time:     3.451 ms (92.72% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=8 julia mutltithreading_benchmarks.jl
 
-using Revise...
-Number of Threads: 8
-Benchmarking ODE_Static...
+single-threaded...
 BenchmarkTools.Trial:
-  memory estimate:  13.41 KiB
-  allocs estimate:  150
+  memory estimate:  306.44 KiB
+  allocs estimate:  3302
   --------------
-  minimum time:     92.431 μs (0.00% GC)
-  median time:      93.796 μs (0.00% GC)
-  mean time:        98.695 μs (0.97% GC)
-  maximum time:     3.697 ms (94.36% GC)
+  minimum time:     1.258 ms (0.00% GC)
+  median time:      1.424 ms (0.00% GC)
+  mean time:        1.429 ms (0.85% GC)
+  maximum time:     3.618 ms (61.72% GC)
   --------------
-  samples:          10000
+  samples:          3496
   evals/sample:     1
-Benchmarking ODE_ODE...
-BenchmarkTools.Trial:
-  memory estimate:  35.63 KiB
-  allocs estimate:  408
-  --------------
-  minimum time:     238.627 μs (0.00% GC)
-  median time:      242.405 μs (0.00% GC)
-  mean time:        251.187 μs (1.06% GC)
-  maximum time:     4.650 ms (92.38% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-micha@linux-9wj2:~/git/NetworkDynamics.jl/examples>
-
-
-# 20 nodes 64 edges, Threads.@threads
-
-
-
-micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=1 julia mutltithreading_benchmarks.jl
-using Revise...
-Number of Threads: 1
-Benchmarking ODE_Static...
-BenchmarkTools.Trial:
-  memory estimate:  15.03 KiB
-  allocs estimate:  166
-  --------------
-  minimum time:     108.700 μs (0.00% GC)
-  median time:      110.403 μs (0.00% GC)
-  mean time:        113.487 μs (0.82% GC)
-  maximum time:     3.315 ms (96.11% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-Benchmarking ODE_ODE...
-BenchmarkTools.Trial:
-  memory estimate:  37.25 KiB
-  allocs estimate:  424
-  --------------
-  minimum time:     244.220 μs (0.00% GC)
-  median time:      256.849 μs (0.00% GC)
-  mean time:        264.839 μs (1.10% GC)
-  maximum time:     5.073 ms (93.18% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=2 julia mutltithreading_benchmarks.jl
-using Revise...
-Number of Threads: 2
-Benchmarking ODE_Static...
-BenchmarkTools.Trial:
-  memory estimate:  16.44 KiB
-  allocs estimate:  176
-  --------------
-  minimum time:     72.222 μs (0.00% GC)
-  median time:      75.840 μs (0.00% GC)
-  mean time:        78.857 μs (1.53% GC)
-  maximum time:     6.309 ms (97.35% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-Benchmarking ODE_ODE...
-BenchmarkTools.Trial:
-  memory estimate:  38.66 KiB
-  allocs estimate:  434
-  --------------
-  minimum time:     147.975 μs (0.00% GC)
-  median time:      157.813 μs (0.00% GC)
-  mean time:        163.835 μs (1.78% GC)
-  maximum time:     7.637 ms (97.15% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=4 julia mutltithreading_benchmarks.jl
-using Revise...
-Number of Threads: 4
-Benchmarking ODE_Static...
-BenchmarkTools.Trial:
-  memory estimate:  19.28 KiB
-  allocs estimate:  196
-  --------------
-  minimum time:     56.880 μs (0.00% GC)
-  median time:      61.397 μs (0.00% GC)
-  mean time:        64.777 μs (3.16% GC)
-  maximum time:     10.420 ms (98.37% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-Benchmarking ODE_ODE...
-BenchmarkTools.Trial:
-  memory estimate:  41.50 KiB
-  allocs estimate:  454
-  --------------
-  minimum time:     93.770 μs (0.00% GC)
-  median time:      102.092 μs (0.00% GC)
-  mean time:        107.795 μs (4.33% GC)
-  maximum time:     15.909 ms (98.63% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=8 julia mutltithreading_benchmarks.jl
-using Revise...
-Number of Threads: 8
-Benchmarking ODE_Static...
-BenchmarkTools.Trial:
-  memory estimate:  24.97 KiB
-  allocs estimate:  236
-  --------------
-  minimum time:     89.014 μs (0.00% GC)
-  median time:      98.549 μs (0.00% GC)
-  mean time:        106.909 μs (3.04% GC)
-  maximum time:     11.175 ms (98.46% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-Benchmarking ODE_ODE...
-BenchmarkTools.Trial:
-  memory estimate:  47.19 KiB
-  allocs estimate:  494
-  --------------
-  minimum time:     129.463 μs (0.00% GC)
-  median time:      143.293 μs (0.00% GC)
-  mean time:        159.133 μs (4.02% GC)
-  maximum time:     21.738 ms (98.81% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=3 julia mutltithreading_benchmarks.jl
-using Revise...
-Number of Threads: 3
-Benchmarking ODE_Static...
-BenchmarkTools.Trial:
-  memory estimate:  17.88 KiB
-  allocs estimate:  186
-  --------------
-  minimum time:     61.208 μs (0.00% GC)
-  median time:      66.052 μs (0.00% GC)
-  mean time:        68.652 μs (2.70% GC)
-  maximum time:     9.539 ms (98.71% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-Benchmarking ODE_ODE...
-BenchmarkTools.Trial:
-  memory estimate:  40.09 KiB
-  allocs estimate:  444
-  --------------
-  minimum time:     114.259 μs (0.00% GC)
-  median time:      123.600 μs (0.00% GC)
-  mean time:        133.290 μs (2.88% GC)
-  maximum time:     13.946 ms (98.29% GC)
-  --------------
-  samples:          10000
-  evals/sample:     1
-
-
-  # 100 nodes 1600 edges, without Threads.@threads
-
-  micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=1 julia mutltithreading_benchmarks.jl
-  using Revise...
-  Number of Threads: 1
-  Benchmarking ODE_Static...
-  BenchmarkTools.Trial:
-    memory estimate:  306.44 KiB
-    allocs estimate:  3302
-    --------------
-    minimum time:     2.308 ms (0.00% GC)
-    median time:      2.318 ms (0.00% GC)
-    mean time:        2.375 ms (0.61% GC)
-    maximum time:     4.694 ms (46.78% GC)
-    --------------
-    samples:          2103
-    evals/sample:     1
-  Benchmarking ODE_ODE...
-  BenchmarkTools.Trial:
-    memory estimate:  856.72 KiB
-    allocs estimate:  9708
-    --------------
-    minimum time:     6.111 ms (0.00% GC)
-    median time:      6.131 ms (0.00% GC)
-    mean time:        6.291 ms (0.95% GC)
-    maximum time:     9.933 ms (30.76% GC)
-    --------------
-    samples:          795
-    evals/sample:     1
-  micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=4 julia mutltithreading_benchmarks.jl
-  using Revise...
-  Number of Threads: 4
-  Benchmarking ODE_Static...
-  BenchmarkTools.Trial:
-    memory estimate:  306.44 KiB
-    allocs estimate:  3302
-    --------------
-    minimum time:     2.237 ms (0.00% GC)
-    median time:      2.342 ms (0.00% GC)
-    mean time:        2.367 ms (0.59% GC)
-    maximum time:     4.557 ms (45.96% GC)
-    --------------
-    samples:          2110
-    evals/sample:     1
-  Benchmarking ODE_ODE...
-  BenchmarkTools.Trial:
-    memory estimate:  856.72 KiB
-    allocs estimate:  9708
-    --------------
-    minimum time:     6.062 ms (0.00% GC)
-    median time:      6.101 ms (0.00% GC)
-    mean time:        6.209 ms (0.95% GC)
-    maximum time:     11.798 ms (40.37% GC)
-    --------------
-    samples:          805
-    evals/sample:     1
-
-
-
-
-
-  # 100 nodes 1600 edges, Threads.@threads
-
-
-
-micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=1 julia mutltithreading_benchmarks.jl
-using Revise...
-Number of Threads: 1
-Benchmarking ODE_Static...
-BenchmarkTools.Trial:
+parallel...
+Warning: You are using multi-threading with only one thread available to Julia. Consider re-starting Julia with the environment variable JULIA_NUM_THREADS set to the number of physical cores of your CPU.BenchmarkTools.Trial:
   memory estimate:  308.06 KiB
   allocs estimate:  3318
   --------------
-  minimum time:     2.214 ms (0.00% GC)
-  median time:      2.316 ms (0.00% GC)
-  mean time:        2.343 ms (0.71% GC)
-  maximum time:     5.004 ms (53.02% GC)
+  minimum time:     1.260 ms (0.00% GC)
+  median time:      1.430 ms (0.00% GC)
+  mean time:        1.439 ms (0.88% GC)
+  maximum time:     4.096 ms (54.34% GC)
   --------------
-  samples:          2132
+  samples:          3471
   evals/sample:     1
 Benchmarking ODE_ODE...
+
+single-threaded...
+BenchmarkTools.Trial:
+  memory estimate:  856.72 KiB
+  allocs estimate:  9708
+  --------------
+  minimum time:     3.270 ms (0.00% GC)
+  median time:      3.620 ms (0.00% GC)
+  mean time:        3.681 ms (1.22% GC)
+  maximum time:     6.003 ms (40.91% GC)
+  --------------
+  samples:          1358
+  evals/sample:     1
+parallel...
+Warning: You are using multi-threading with only one thread available to Julia. Consider re-starting Julia with the environment variable JULIA_NUM_THREADS set to the number of physical cores of your CPU.
 BenchmarkTools.Trial:
   memory estimate:  858.34 KiB
   allocs estimate:  9724
   --------------
-  minimum time:     5.951 ms (0.00% GC)
-  median time:      6.020 ms (0.00% GC)
-  mean time:        6.115 ms (0.95% GC)
-  maximum time:     9.637 ms (34.93% GC)
+  minimum time:     3.280 ms (0.00% GC)
+  median time:      3.723 ms (0.00% GC)
+  mean time:        3.875 ms (1.26% GC)
+  maximum time:     7.654 ms (46.28% GC)
   --------------
-  samples:          818
+  samples:          1289
   evals/sample:     1
-micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=2 julia mutltithreading_benchmarks.jl
-using Revise...
-Number of Threads: 2
-Benchmarking ODE_Static...
-BenchmarkTools.Trial:
-  memory estimate:  309.47 KiB
-  allocs estimate:  3328
-  --------------
-  minimum time:     1.268 ms (0.00% GC)
-  median time:      1.283 ms (0.00% GC)
-  mean time:        1.340 ms (2.28% GC)
-  maximum time:     11.397 ms (87.55% GC)
-  --------------
-  samples:          3718
-  evals/sample:     1
-Benchmarking ODE_ODE...
-BenchmarkTools.Trial:
-  memory estimate:  859.75 KiB
-  allocs estimate:  9734
-  --------------
-  minimum time:     3.258 ms (0.00% GC)
-  median time:      3.283 ms (0.00% GC)
-  mean time:        3.421 ms (2.40% GC)
-  maximum time:     12.087 ms (71.54% GC)
-  --------------
-  samples:          1461
-  evals/sample:     1
-micha@linux-9wj2:~/git/NetworkDynamics.jl/examples> env JULIA_NUM_THREADS=4 julia mutltithreading_benchmarks.jl
+
+u@m:~/git/NetworkDynamics.jl/benchmarking> env JULIA_NUM_THREADS=4 julia multithreading_benchmarks.jl
 using Revise...
 Number of Threads: 4
+
 Benchmarking ODE_Static...
+
+single-threaded...
+Your instance of Julia has more than one thread available for executing code. Consider calling network_dynamics with the keyword parallel=true.BenchmarkTools.Trial:
+  memory estimate:  306.44 KiB
+  allocs estimate:  3302
+  --------------
+  minimum time:     1.251 ms (0.00% GC)
+  median time:      1.378 ms (0.00% GC)
+  mean time:        1.389 ms (0.72% GC)
+  maximum time:     2.985 ms (53.47% GC)
+  --------------
+  samples:          3595
+  evals/sample:     1
+parallel...
 BenchmarkTools.Trial:
   memory estimate:  312.31 KiB
   allocs estimate:  3348
   --------------
-  minimum time:     684.824 μs (0.00% GC)
-  median time:      727.337 μs (0.00% GC)
-  mean time:        784.141 μs (6.99% GC)
-  maximum time:     36.044 ms (97.13% GC)
+  minimum time:     415.784 μs (0.00% GC)
+  median time:      521.239 μs (0.00% GC)
+  mean time:        569.219 μs (6.06% GC)
+  maximum time:     20.911 ms (97.16% GC)
   --------------
-  samples:          6373
+  samples:          8745
   evals/sample:     1
 Benchmarking ODE_ODE...
+
+single-threaded...
+Info: Your instance of Julia has more than one thread available for executing code. Consider calling network_dynamics with the keyword parallel=true.
+BenchmarkTools.Trial:
+  memory estimate:  856.72 KiB
+  allocs estimate:  9708
+  --------------
+  minimum time:     3.385 ms (0.00% GC)
+  median time:      4.011 ms (0.00% GC)
+  mean time:        4.085 ms (1.20% GC)
+  maximum time:     8.100 ms (50.52% GC)
+  --------------
+  samples:          1223
+  evals/sample:     1
+parallel...
 BenchmarkTools.Trial:
   memory estimate:  862.59 KiB
   allocs estimate:  9754
   --------------
-  minimum time:     1.753 ms (0.00% GC)
-  median time:      1.850 ms (0.00% GC)
-  mean time:        1.998 ms (6.67% GC)
-  maximum time:     27.765 ms (93.10% GC)
+  minimum time:     1.035 ms (0.00% GC)
+  median time:      1.358 ms (0.00% GC)
+  mean time:        1.448 ms (6.32% GC)
+  maximum time:     19.805 ms (93.02% GC)
   --------------
-  samples:          2500
+  samples:          3448
   evals/sample:     1
-micha@linux-9wj2:~/git/NetworkDynamics.jl/examples>
